@@ -1,0 +1,195 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.egg-info/
+.dist-info/
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+# --- Virtual environments ---
+.venv/
+.venv-train/
+venv/
+
+# --- Local env / secrets ---
+.env
+.env.*
+*.key
+*.pem
+accounts*.json
+accounts*.json.backup
+extract_all_keys.py
+parse_all_keys.py
+
+# --- Logs / outputs ---
+logs/
+*.log
+nohup.out
+
+# --- Large artifacts / datasets ---
+models/
+ship/maritime_pipeline/data/
+ship/maritime_pipeline/data/**
+
+# Scraped / extracted intermediate datasets
+ship/maritime_pipeline/scrapers/data/
+ship/maritime_pipeline/scrapers/data/**
+
+# Local pipeline databases / checkpoints
+*.db
+
+# Training artifacts (generated locally)
+training/checkpoints/
+training/cache/
+training/merged/
+training/**/runs/
+
+# Deployment artifacts (generated locally)
+deploy/*.gguf
+deploy/*.bin
+
+# Research/source documents (many are large and may be copyrighted)
+ship/data/
+ship/data/**
+
+# Temporary extraction scratchpads
+ship/extractions_tmp/
+ship/extractions_tmp/**
+
+# common ML weight formats (defense-in-depth)
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.gguf
+*.ggml
+
+# Large document formats (defense-in-depth)
+*.pdf
+*.djvu
+*.epub
+*.doc
+*.docx
+
+# --- Build artifacts ---
+llama.cpp/build/
+llama.cpp/build-*/
+llama.cpp/*.xcframework/
+llama.cpp/*.framework/
+llama.cpp/*.a
+llama.cpp/*.o
+llama.cpp/*.so
+llama.cpp/*.dylib
+llama.cpp/*.dll
+llama.cpp/*.exe
+
+# --- OS/editor ---
+.DS_Store
+.vscode/
+.idea/
+
+# --- Large binary artifacts ---
+*.zip
+*.apk
+*.tar.gz
+*.tar.bz2
+*.7z
+
+# --- Downloads directory ---
+downloads/
+
+# --- Frontend build artifacts ---
+frontend/metro-cache/
+frontend/tmp_*.bundle
+frontend/.after_*.png
+frontend/.repro_*.png
+frontend/.verify_*.png
+frontend/.tmp_*
+frontend/.threads_*
+
+# --- Marinetime (old copy) ---
+Marinetime/
+
+# --- Audit dumps ---
+audit/
+
+# --- Large training data (keep scripts, ignore generated data) ---
+training/real_maritime_data/
+training/real_world_data/
+training/orchestrated_60k/
+training/gold_standard/generated/*.backup
+
+# --- macOS resource forks ---
+._*
+
+# --- Scratch / status markdown docs ---
+AGENTIC_IDE_PLAN.md
+API_RATE_LIMITS_COMPARISON.md
+APK_RETHINK_END_TO_END_REVIEW.md
+COMPLETE_60K_PLAN.md
+COMPREHENSIVE_ANALYSIS.md
+COMPREHENSIVE_GENERATION_STATUS.md
+COPILOT_FULL_CODEBASE_SYNTHESIS.md
+CORRECTED_*.md
+CURRENT_*.md
+EXECUTION_LOG.md
+EXECUTIVE_SUMMARY.md
+FREE_*.md
+GENERATION_*.md
+MARITIME_AI_PLAN.md
+MASTER_ORCHESTRATION_PLAN.md
+MULTI_ACCOUNT_CAPACITY_ANALYSIS.md
+OPTIMIZATION_*.md
+OPTIMIZED_*.md
+ORCHESTRATION_READY.md
+PLAN_*.md
+PROGRESS_UPDATE.md
+QUICKSTART*.md
+QUICK_STATUS.md
+RATE_LIMIT_*.md
+README_AI_TRAINING.md
+READY_TO_LAUNCH.md
+REALITY_CHECK.md
+REAL_MARITIME_DATA_QUICKSTART.md
+START_HERE.md
+STATUS_SUMMARY.md
+TASK_PROGRESS.md
+TRAINING_OPTIMIZATION_PLAN.md
+ULTIMATE_75_KEY_PLAN.md
+UPDATED_ANALYSIS_*.md
+detailedprompt.md
+
+# --- Scratch scripts at root ---
+generate_agent*.py
+test_*.py
+eval_*.py
+eval_*.sh
+eval_*.json
+launch_generation.sh
+monitor_*.sh
+restart_*.sh
+resume_*.sh
+report_*.sh
+download_models.sh
+finalize_model_downloads.sh
+generation.pid
+ds_config_*.json
+*.tgz
+
+# --- Diagnostics ---
+diagnostics/
+
+# --- Ship research docs (keep only maritime_pipeline/) ---
+ship/*.md
+ship/maritime_pipeline/debug_*.py
+ship/maritime_pipeline/check_*.py
+
+# --- Frontend eval outputs ---
+frontend/tests/evals/output/
+frontend/state_of_play.md
+frontend/task.md
