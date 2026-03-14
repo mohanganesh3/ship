@@ -1,0 +1,579 @@
+#!/usr/bin/env python3
+"""
+MULTI-ACCOUNT REAL MARITIME DATA GENERATOR
+==========================================
+- Uses multiple API accounts to maximize free tier usage
+- Generates REAL maritime scenarios, not random questions
+- Every scenario is based on actual incidents and regulations
+- Defensible as life-safety training data
+
+Usage:
+    python3 multi_account_real_generator.py --config accounts.json
+"""
+
+import json
+import os
+import time
+import random
+from pathlib import Path
+from typing import Dict, List, Optional
+from dataclasses import dataclass, asdict
+from datetime import datetime
+import requests
+import threading
+from queue import Queue
+import argparse
+
+# Import real scenarios
+import sys
+sys.path.append(str(Path(__file__).parent))
+from real_maritime_scenarios import (
+    REAL_MARITIME_SCENARIOS,
+    MARITIME_CALCULATIONS,
+    REGULATORY_REFERENCES,
+    STANDARD_PROCEDURES
+)
+
+OUTPUT_DIR = Path("/home/mohanganesh/ship/training/real_maritime_data")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+OUTPUT_FILE = OUTPUT_DIR / "maritime_real_scenarios.jsonl"
+STATS_FILE = OUTPUT_DIR / "generation_stats.json"
+PROGRESS_FILE = OUTPUT_DIR / "progress.json"
+
+TARGET_SAMPLES = 500000
+
+@dataclass
+class APIAccount:
+    """API account configuration."""
+    provider: str  # google, cerebras, groq
+    api_key: str
+    account_id: str  # unique identifier
+    requests_made: int = 0
+    errors: int = 0
+    daily_requests: int = 0  # Track requests per day
+    paused: bool = False     # Pause when daily limit hit
+    
+@dataclass
+class Stats:
+    successful: int = 0
+    failed: int = 0
+    by_provider: Dict[str, int] = None
+    by_scenario_type: Dict[str, int] = None
+    start_time: str = ""
+    
+    def __post_init__(self):
+        if self.by_provider is None:
+            self.by_provider = {}
+        if self.by_scenario_type is None:
+            self.by_scenario_type = {}
+
+stats_lock = threading.Lock()
+write_lock = threading.Lock()
+
+# OPTIMIZED RATE LIMITS (from official documentation research)
+PROVIDER_RATE_LIMITS = {
+    'google': {
+        'rpm': 15,              # Official limit: 15 RPM (was using 10)
+        'delay': 4.0,           # 15 RPM = 4 second delays
+        'daily_limit': None,    # No hard daily limit on gemini-flash-latest
+        'model': 'gemini-flash-latest'
+    },
+    'cerebras': {
+        'rpm': None,            # NO RPM LIMIT! Only daily token quota
+        'delay': 0.5,           # Burst mode (was 1.0s, now 0.5s)
+        'daily_limit': 1000000, # ~1M tokens/day (token-based limit)
+        'burst_mode': True,
+        'model': 'llama3.1-8b'
+    },
+    'groq': {
+        'rpm': 30,              # Official limit: 30 RPM
+        'delay': 2.0,           # 30 RPM = 2 second delays
+        'daily_limit': 14400,   # CRITICAL: Only 14,400 requests/day!
+        'model': 'llama-3.1-8b-instant'
+    }
+}
+
+def load_accounts(config_file: str) -> List[APIAccount]:
+    """Load API accounts from JSON config.
+    
+    Supports format with multiple providers per account:
+    {
+      "accounts": [
+        {
+          "name": "account_01",
+          "google_api_key": "...",
+          "cerebras_api_key": "...",
+          "groq_api_key": "..."
+        }
+      ]
+    }
+    """
+    with open(config_file) as f:
+        config = json.load(f)
+    
+    accounts = []
+    for acc in config["accounts"]:
+        account_name = acc.get("name", f"account_{len(accounts)}")
+        
+        # Google account
+        if acc.get("google_api_key"):
+            accounts.append(APIAccount(
+                provider="google",
+                api_key=acc["google_api_key"],
+                account_id=f"{account_name}_google"
+            ))
+        
+        # Cerebras account  
+        if acc.get("cerebras_api_key"):
+            accounts.append(APIAccount(
+                provider="cerebras",
+                api_key=acc["cerebras_api_key"],
+                account_id=f"{account_name}_cerebras"
+            ))
+        
+        # Groq account
+        if acc.get("groq_api_key"):
+            accounts.append(APIAccount(
+                provider="groq",
+                api_key=acc["groq_api_key"],
+                account_id=f"{account_name}_groq"
+            ))
+    
+    return accounts
+
+def create_real_scenario_prompt(scenario_data: Dict, scenario_type: str) -> str:
+    """Create prompt for REAL maritime scenario."""
+    
+    scenario = scenario_data["scenario"]
+    context = scenario_data["context"]
+    must_include = scenario_data["must_include"]
+    safety_critical = scenario_data.get("safety_critical", False)
+    basis = scenario_data.get("real_incident_basis", "industry standard practice")
+    
+    prompt = f"""You are a senior maritime officer with 20+ years experience creating life-safety training scenarios.
+
+REAL SCENARIO (Based on: {basis}):
+Scenario Type: {scenario_type}
+Scenario Title: {scenario}
+Situation: {context}
+
+CRITICAL REQUIREMENTS - Every answer MUST include:
+{chr(10).join(f'- {item}' for item in must_include)}
+
+{"⚠️ SAFETY CRITICAL: This scenario involves life-safety. Answer must emphasize safety procedures." if safety_critical else ""}
+
+Generate a detailed question and comprehensive answer for this REAL maritime situation.
+
+ANSWER MUST:
+1. Reference specific regulations (SOLAS/MARPOL/STCW/ISM/ISPS where applicable)
+2. List step-by-step procedures in correct order
+3. Emphasize safety considerations
+4. Include communications/notifications required
+5. Mention documentation/record-keeping
+6. Be 300-500 words with technical accuracy
+7. Use proper maritime terminology
+
+This will be used to train AI for maritime officers. Inaccurate information could cause accidents.
+
+Format EXACTLY as:
+QUESTION: [Specific question about this scenario]
+
+ANSWER: [Comprehensive step-by-step answer covering all requirements]
+
+REGULATORY REFERENCES: [List specific regulation sections]
+
+SAFETY CONSIDERATIONS: [Key safety points]
+
+Generate now:"""
+
+    return prompt
+
+def create_calculation_prompt(calc_topic: str, category: str) -> str:
+    """Create prompt for maritime calculation."""
+    
+    prompt = f"""You are a maritime instructor creating a calculation problem for officers.
+
+CALCULATION TOPIC: {calc_topic}
+Category: {category}
+
+Generate a REALISTIC calculation problem that officers actually need to solve at sea.
+
+REQUIREMENTS:
+1. Provide realistic values/data
+2. Show COMPLETE step-by-step working
+3. Explain what each step does
+4. Include units throughout
+5. Verify the answer makes sense
+6. 300-400 words
+
+Format EXACTLY as:
+QUESTION: [Calculation problem with all given data]
+
+ANSWER: [Step-by-step solution with explanations]
+
+STEP 1: [Clear explanation]
+STEP 2: [Clear explanation]
+...
+FINAL ANSWER: [Answer with units and verification]
+
+Generate now:"""
+    
+    return prompt
+
+def create_procedure_prompt(procedure: str, category: str) -> str:
+    """Create prompt for standard procedure."""
+    
+    prompt = f"""You are a senior maritime officer documenting standard procedures.
+
+PROCEDURE: {procedure}
+Category: {category}
+
+Generate a detailed, step-by-step procedure following industry best practices.
+
+REQUIREMENTS:
+1. List EVERY step in correct sequence
+2. Include safety precautions
+3. Reference relevant regulations
+4. Include verification/checks
+5. Note documentation required
+6. 300-450 words
+
+Format EXACTLY as:
+QUESTION: Describe the complete procedure for {procedure}
+
+ANSWER: [Detailed step-by-step procedure]
+
+PREPARATION:
+- [List all preparations]
+
+PROCEDURE STEPS:
+1. [Step with details]
+2. [Step with details]
+...
+
+SAFETY PRECAUTIONS:
+- [All safety considerations]
+
+COMPLETION CHECKS:
+- [Verification steps]
+
+DOCUMENTATION:
+- [Records to be kept]
+
+Generate now:"""
+    
+    return prompt
+
+def generate_api_call(provider: str, api_key: str, prompt: str) -> Optional[str]:
+    """Make API call to specified provider."""
+    
+    try:
+        if provider == "google":
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+            data = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"maxOutputTokens": 1000, "temperature": 0.7}
+            }
+            response = requests.post(url, json=data, headers={"Content-Type": "application/json"}, timeout=60)
+            if response.status_code == 200:
+                return response.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+                
+        elif provider == "cerebras":
+            url = "https://api.cerebras.ai/v1/chat/completions"
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            data = {
+                "model": "llama3.1-8b",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 1000,
+                "temperature": 0.7
+            }
+            response = requests.post(url, json=data, headers=headers, timeout=60)
+            if response.status_code == 200:
+                return response.json()["choices"][0]["message"]["content"].strip()
+                
+        elif provider == "groq":
+            url = "https://api.groq.com/openai/v1/chat/completions"
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            data = {
+                "model": "llama-3.1-8b-instant",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 1000,
+                "temperature": 0.7
+            }
+            response = requests.post(url, json=data, headers=headers, timeout=60)
+            if response.status_code == 200:
+                return response.json()["choices"][0]["message"]["content"].strip()
+    
+    except Exception as e:
+        print(f"API error ({provider}): {e}")
+        return None
+    
+    return None
+
+def parse_response(text: str) -> Optional[Dict[str, str]]:
+    """Parse response from API."""
+    try:
+        if "QUESTION:" not in text or "ANSWER:" not in text:
+            return None
+        
+        parts = {}
+        sections = text.split("QUESTION:")
+        if len(sections) < 2:
+            return None
+        
+        rest = "QUESTION:" + sections[1]
+        
+        # Extract question
+        if "ANSWER:" in rest:
+            q_parts = rest.split("ANSWER:")
+            parts["question"] = q_parts[0].replace("QUESTION:", "").strip()
+            rest = "ANSWER:" + q_parts[1]
+            
+            # Extract answer (main content before additional sections)
+            answer_text = q_parts[1]
+            for section in ["REGULATORY REFERENCES:", "SAFETY CONSIDERATIONS:", "STEP 1:", "PREPARATION:"]:
+                if section in answer_text:
+                    answer_text = answer_text.split(section)[0]
+            parts["answer"] = answer_text.strip()
+        
+        # Quality checks
+        if len(parts.get("question", "")) < 30 or len(parts.get("answer", "")) < 200:
+            return None
+        
+        # Check for refusals
+        if any(p in parts.get("answer", "").lower() for p in ["i cannot", "i can't", "as an ai", "i'm not able"]):
+            return None
+        
+        # Extract additional sections if present
+        if "REGULATORY REFERENCES:" in text:
+            parts["regulatory_refs"] = text.split("REGULATORY REFERENCES:")[1].split("SAFETY CONSIDERATIONS:")[0].strip() if "SAFETY CONSIDERATIONS:" in text else text.split("REGULATORY REFERENCES:")[1].strip()
+        
+        if "SAFETY CONSIDERATIONS:" in text:
+            parts["safety"] = text.split("SAFETY CONSIDERATIONS:")[1].strip()
+        
+        return parts
+        
+    except Exception as e:
+        print(f"Parse error: {e}")
+        return None
+
+def worker_loop(account: APIAccount, task_queue: Queue, stats: Stats):
+    """Worker thread processing tasks with optimized rate limiting."""
+    
+    file_handle = open(OUTPUT_FILE, 'a')
+    provider_config = PROVIDER_RATE_LIMITS.get(account.provider, {})
+    delay = provider_config.get('delay', 1.0)
+    daily_limit = provider_config.get('daily_limit')
+    
+    while True:
+        try:
+            # Check if account is paused (hit daily limit)
+            if account.paused:
+                time.sleep(60)  # Check every minute if quota reset
+                continue
+            
+            # Check daily limit
+            if daily_limit and account.daily_requests >= daily_limit:
+                print(f"\n⚠️  {account.account_id} hit daily limit ({daily_limit} requests). Pausing until reset.")
+                account.paused = True
+                continue
+            
+            task = task_queue.get(timeout=1)
+            if task is None:
+                break
+            
+            task_type, task_data, task_id = task
+            
+            # Create prompt based on task type
+            if task_type == "real_scenario":
+                scenario_type, scenario_data = task_data
+                prompt = create_real_scenario_prompt(scenario_data, scenario_type)
+            elif task_type == "calculation":
+                category, calc_topic = task_data
+                prompt = create_calculation_prompt(calc_topic, category)
+            elif task_type == "procedure":
+                category, procedure = task_data
+                prompt = create_procedure_prompt(procedure, category)
+            else:
+                task_queue.task_done()
+                continue
+            
+            # Generate
+            response = generate_api_call(account.provider, account.api_key, prompt)
+            account.requests_made += 1
+            account.daily_requests += 1
+            
+            if response:
+                parsed = parse_response(response)
+                if parsed:
+                    sample = {
+                        "id": f"{task_type}_{task_id}_{int(time.time())}",
+                        "type": task_type,
+                        "scenario_category": task_data[0] if task_type in ["real_scenario", "calculation", "procedure"] else "general",
+                        "question": parsed["question"],
+                        "answer": parsed["answer"],
+                        "provider": account.provider,
+                        "account": account.account_id,
+                        "timestamp": datetime.now().isoformat(),
+                        "metadata": {
+                            "safety_critical": task_data[1].get("safety_critical", False) if task_type == "real_scenario" else False,
+                            "real_incident_basis": task_data[1].get("real_incident_basis", "") if task_type == "real_scenario" else "",
+                            "regulatory_refs": parsed.get("regulatory_refs", ""),
+                            "safety_considerations": parsed.get("safety", "")
+                        }
+                    }
+                    
+                    # Write
+                    with write_lock:
+                        file_handle.write(json.dumps(sample) + '\n')
+                        file_handle.flush()
+                    
+                    # Update stats
+                    with stats_lock:
+                        stats.successful += 1
+                        stats.by_provider[account.provider] = stats.by_provider.get(account.provider, 0) + 1
+                        stats.by_scenario_type[task_type] = stats.by_scenario_type.get(task_type, 0) + 1
+                else:
+                    with stats_lock:
+                        stats.failed += 1
+                    account.errors += 1
+            else:
+                with stats_lock:
+                    stats.failed += 1
+                account.errors += 1
+            
+            task_queue.task_done()
+            
+            # Provider-specific rate limiting
+            time.sleep(delay)
+            
+        except Exception as e:
+            pass
+    
+    file_handle.close()
+
+def main():
+    parser = argparse.ArgumentParser(description="Multi-account real maritime data generator")
+    parser.add_argument("--config", default="accounts.json", help="Accounts configuration file")
+    parser.add_argument("--target", type=int, default=TARGET_SAMPLES, help="Target number of samples")
+    args = parser.parse_args()
+    
+    print("🚢 MULTI-ACCOUNT REAL MARITIME DATA GENERATOR")
+    print("=" * 70)
+    
+    # Load accounts
+    accounts = load_accounts(args.config)
+    print(f"✓ Loaded {len(accounts)} API accounts")
+    for provider in set(acc.provider for acc in accounts):
+        count = sum(1 for acc in accounts if acc.provider == provider)
+        print(f"  - {provider}: {count} accounts")
+    
+    print(f"\n🎯 Target: {args.target:,} samples")
+    print(f"📁 Output: {OUTPUT_FILE}")
+    print("=" * 70)
+    
+    # Initialize
+    stats = Stats(start_time=datetime.now().isoformat())
+    task_queue = Queue()
+    
+    # Start workers
+    workers = []
+    for account in accounts:
+        t = threading.Thread(target=worker_loop, args=(account, task_queue, stats))
+        t.start()
+        workers.append(t)
+    
+    print(f"\n✓ Started {len(workers)} workers")
+    
+    # Generate tasks
+    print(f"\n📋 Generating {args.target:,} REAL maritime scenario tasks...")
+    
+    task_id = 0
+    
+    # Real scenarios (60% of dataset)
+    real_scenario_count = int(args.target * 0.60)
+    for scenario_type, scenarios in REAL_MARITIME_SCENARIOS.items():
+        scenarios_needed = real_scenario_count // len(REAL_MARITIME_SCENARIOS)
+        for i in range(scenarios_needed):
+            scenario_data = random.choice(scenarios)
+            task_queue.put(("real_scenario", (scenario_type, scenario_data), task_id))
+            task_id += 1
+    
+    # Calculations (20% of dataset)
+    calc_count = int(args.target * 0.20)
+    all_calcs = [(cat, calc) for cat, calcs in MARITIME_CALCULATIONS.items() for calc in calcs]
+    for i in range(calc_count):
+        category, calc = random.choice(all_calcs)
+        task_queue.put(("calculation", (category, calc), task_id))
+        task_id += 1
+    
+    # Procedures (20% of dataset)
+    proc_count = int(args.target * 0.20)
+    all_procs = [(cat, proc) for cat, procs in STANDARD_PROCEDURES.items() for proc in procs]
+    for i in range(proc_count):
+        category, proc = random.choice(all_procs)
+        task_queue.put(("procedure", (category, proc), task_id))
+        task_id += 1
+    
+    print(f"✓ Queued {task_id:,} tasks")
+    print(f"  - Real scenarios: {real_scenario_count:,} (60%)")
+    print(f"  - Calculations: {calc_count:,} (20%)")
+    print(f"  - Procedures: {proc_count:,} (20%)")
+    
+    # Monitor
+    print("\n🔄 Generation in progress...\n")
+    start_time = time.time()
+    last_count = 0
+    
+    while not task_queue.empty() or any(w.is_alive() for w in workers):
+        time.sleep(10)
+        current = stats.successful
+        delta = current - last_count
+        last_count = current
+        
+        elapsed = time.time() - start_time
+        rate = stats.successful / elapsed if elapsed > 0 else 0
+        remaining = args.target - stats.successful
+        eta = remaining / rate / 3600 if rate > 0 else 0
+        
+        # Count active vs paused accounts
+        active_accounts = sum(1 for acc in accounts if not acc.paused)
+        paused_accounts = len(accounts) - active_accounts
+        
+        print(f"   {stats.successful:,}/{args.target:,} ({stats.successful/args.target*100:.1f}%) | "
+              f"Rate: {rate:.1f}/s ({rate*3600:.0f}/hr) | +{delta} | "
+              f"Accounts: {active_accounts} active, {paused_accounts} paused | "
+              f"ETA: {eta:.1f}h")
+    
+    # Stop workers
+    for _ in workers:
+        task_queue.put(None)
+    for w in workers:
+        w.join()
+    
+    # Final stats
+    elapsed = time.time() - start_time
+    print("\n" + "=" * 70)
+    print("🎉 GENERATION COMPLETE!")
+    print(f"✓ Total: {stats.successful:,} successful")
+    print(f"✗ Failed: {stats.failed:,}")
+    print(f"⏱️  Time: {elapsed/3600:.2f} hours")
+    print(f"⚡ Rate: {stats.successful/elapsed:.2f}/s ({stats.successful/elapsed*3600:.0f}/hr)")
+    print(f"\n📊 By Provider:")
+    for provider, count in stats.by_provider.items():
+        print(f"  {provider}: {count:,}")
+    print(f"\n📚 By Scenario Type:")
+    for stype, count in stats.by_scenario_type.items():
+        print(f"  {stype}: {count:,}")
+    print("=" * 70)
+    
+    # Save stats
+    with open(STATS_FILE, 'w') as f:
+        json.dump(asdict(stats), f, indent=2)
+    
+    print(f"\n✅ Data saved to: {OUTPUT_FILE}")
+    print(f"📊 Stats saved to: {STATS_FILE}")
+
+if __name__ == "__main__":
+    main()
