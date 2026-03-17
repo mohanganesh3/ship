@@ -1,0 +1,23 @@
+# Training venv constraints to prevent accidental torch upgrades.
+# Keep this pinned because the host driver is CUDA 11.4 and we need cu118 wheels.
+torch==2.1.2+cu118
+
+# Torch + NumPy ABI compatibility (PyTorch 2.1.x is built against NumPy 1.x).
+numpy<2
+
+# Unsloth / Unsloth Zoo historically expect protobuf<4 in some releases.
+protobuf<4
+
+# Keep Triton compatible with Torch 2.1.x (newer Triton can pull newer Torch).
+triton==2.1.0
+
+# Need a Transformers version that recognizes Qwen3 (`model_type: qwen3`).
+# Keep this pinned to avoid accidental major-version jumps.
+transformers==4.57.6
+
+# Older Unsloth releases expect TRL < 0.9.
+trl==0.8.6
+
+# DeepSpeed (via torch.utils.cpp_extension) still imports pkg_resources.
+# Newer setuptools releases are deprecating/removing it, so keep setuptools old.
+setuptools<70
