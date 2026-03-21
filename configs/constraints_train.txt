@@ -16,3 +16,7 @@ transformers==4.46.3
 
 # Older Unsloth releases expect TRL < 0.9.
 trl==0.8.6
+
+# DeepSpeed (via torch.utils.cpp_extension) still imports pkg_resources.
+# Newer setuptools releases are deprecating/removing it, so keep setuptools old.
+setuptools<70
