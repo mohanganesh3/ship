@@ -21,6 +21,9 @@ os.environ.setdefault("OMP_NUM_THREADS", "48")
 os.environ.setdefault("MKL_NUM_THREADS", "48")
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "48")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")  # hard disable GPU visibility
+os.environ.setdefault("NCCL_P2P_DISABLE", "1")
+os.environ.setdefault("NCCL_IB_DISABLE", "1")
 
 import torch
 torch.set_num_threads(48)
@@ -97,6 +100,13 @@ def log_pipeline(msg: str):
     with open(PIPELINE_LOG, "a") as f:
         f.write(line)
     logger.info(msg)
+
+
+def ensure_venv_train(phase_tag: str) -> None:
+    exe = os.path.realpath(sys.executable)
+    if "/.venv-train/" not in exe:
+        log_pipeline(f"{phase_tag} FAIL — ENV_GATE: must run with .venv-train python (got: {exe})")
+        raise SystemExit(1)
 
 
 def load_jsonl(path: Path) -> list[dict]:
@@ -420,6 +430,29 @@ class CurriculumStageCallback:
         self.callback = _Callback()
 
 
+class LossLoggingCallback:
+    """Ensure loss is visible in the main training log."""
+
+    def __init__(self):
+        from transformers import TrainerCallback
+
+        class _Callback(TrainerCallback):
+            def on_log(inner_self, args, state, control, logs=None, **kwargs):
+                if not logs:
+                    return
+                if "loss" in logs:
+                    try:
+                        logger.info(
+                            f"TRAIN_LOSS step={state.global_step} loss={float(logs['loss']):.6f}"
+                        )
+                    except Exception:
+                        logger.info(f"TRAIN_LOSS step={state.global_step} loss={logs.get('loss')}")
+                else:
+                    logger.info(f"TRAIN_LOG step={state.global_step} logs={logs}")
+
+        self.callback = _Callback()
+
+
 def compute_perplexity_simple(model, tokenizer, records, max_samples=50):
     model.eval()
     total_loss = 0.0
@@ -447,6 +480,9 @@ def main():
     parser.add_argument("--dry-run", action="store_true",
                         help="Run exactly 20 steps, print loss, do not save")
     args = parser.parse_args()
+
+    phase_tag = "PHASE_1A_CPT_4B_DRY_RUN" if args.dry_run else "PHASE_1A_CPT_4B"
+    ensure_venv_train(phase_tag)
 
     if args.dry_run:
         log_pipeline("PHASE_1A_CPT_4B_DRY_RUN STATUS: STARTING. CPU-only fp32 LoRA r=128")
@@ -584,6 +620,8 @@ def main():
         warmup_ratio=WARMUP_RATIO,
         lr_scheduler_type="cosine",
         logging_steps=logging_steps,
+        logging_strategy="steps",
+        logging_first_step=True,
         save_steps=save_steps,
         save_total_limit=3,
         no_cuda=True,              # CPU-ONLY
@@ -593,6 +631,7 @@ def main():
         dataloader_num_workers=0,  # 0 = main process (avoids CPU contention with teacher)
         dataloader_pin_memory=False,
         report_to="none",
+        disable_tqdm=True,
         load_best_model_at_end=False,
         prediction_loss_only=True,
         optim="adamw_torch",
@@ -608,6 +647,9 @@ def main():
 
     # === CALLBACKS ===
     callbacks = []
+
+    # Always log losses (and other trainer logs) in a consistent format.
+    callbacks.append(LossLoggingCallback().callback)
 
     if not args.dry_run:
         ppl_cb = PerplexityCallback(

@@ -74,6 +74,15 @@ def require_requests() -> None:
         sys.exit(1)
 
 
+def ensure_venv_train() -> None:
+    exe = os.path.realpath(sys.executable)
+    if "/.venv-train/" not in exe:
+        msg = f"FINAL_EVAL FAIL — ENV_GATE: must run with .venv-train python (got: {exe})"
+        log_pipeline(msg)
+        print(msg)
+        sys.exit(1)
+
+
 def wait_for_health(url: str, timeout_s: int = 600) -> bool:
     require_requests()
     t0 = time.time()
@@ -423,6 +432,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    ensure_venv_train()
     log_pipeline("FINAL_EVAL STATUS: STARTING")
 
     require_requests()
