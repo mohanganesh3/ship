@@ -30,6 +30,8 @@ while true; do
   W1_TAIL="(missing)"
   if [[ -f "${WAVE1_LOG}" ]]; then
     W1_TAIL=$(tail -n 50 "${WAVE1_LOG}" | tr '\n' ' ' | tail -c 2000 || true)
+  elif [[ -f "${MODEA_JSONL}" ]]; then
+    W1_TAIL=$(tail -n 5 "${MODEA_JSONL}" | tr '\n' ' ' | tail -c 2000 || true)
   fi
 
   MODEA_COUNT=0
