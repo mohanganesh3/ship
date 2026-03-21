@@ -1,0 +1,80 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.egg-info/
+.dist-info/
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+# --- Virtual environments ---
+.venv/
+.venv-train/
+venv/
+
+# --- Local env / secrets ---
+.env
+.env.*
+*.key
+*.pem
+
+# --- Logs / outputs ---
+logs/
+*.log
+nohup.out
+
+# --- Large artifacts / datasets ---
+models/
+ship/maritime_pipeline/data/
+ship/maritime_pipeline/data/**
+
+# Scraped / extracted intermediate datasets
+ship/maritime_pipeline/scrapers/data/
+ship/maritime_pipeline/scrapers/data/**
+
+# Local pipeline databases / checkpoints
+*.db
+
+# Research/source documents (many are large and may be copyrighted)
+ship/data/
+ship/data/**
+
+# Temporary extraction scratchpads
+ship/extractions_tmp/
+ship/extractions_tmp/**
+
+# common ML weight formats (defense-in-depth)
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.gguf
+*.ggml
+
+# Large document formats (defense-in-depth)
+*.pdf
+*.djvu
+*.epub
+*.doc
+*.docx
+
+# --- Build artifacts ---
+llama.cpp/build/
+llama.cpp/build-*/
+llama.cpp/*.xcframework/
+llama.cpp/*.framework/
+llama.cpp/*.a
+llama.cpp/*.o
+llama.cpp/*.so
+llama.cpp/*.dylib
+llama.cpp/*.dll
+llama.cpp/*.exe
+
+# --- OS/editor ---
+.DS_Store
+.vscode/
+.idea/

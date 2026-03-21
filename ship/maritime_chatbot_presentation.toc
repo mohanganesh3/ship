@@ -1,0 +1,11 @@
+\beamer@sectionintoc {1}{The Problem: Ships Need Offline AI}{3}{0}{1}
+\beamer@sectionintoc {2}{Research Methodology \& Dataset}{5}{0}{2}
+\beamer@sectionintoc {3}{All 10 Approaches: Rankings}{8}{0}{3}
+\beamer@sectionintoc {4}{The Winning Pipeline}{12}{0}{4}
+\beamer@sectionintoc {5}{Base Model Selection}{16}{0}{5}
+\beamer@sectionintoc {6}{Pipeline Deep Dive: Stage by Stage}{18}{0}{6}
+\beamer@sectionintoc {7}{QLoRA: Knowledge Mechanics}{22}{0}{7}
+\beamer@sectionintoc {8}{Dataset Gaps \& Deployment}{24}{0}{8}
+\beamer@sectionintoc {9}{Honest Limitations}{28}{0}{9}
+\beamer@sectionintoc {10}{Roadmap \& Key Papers}{30}{0}{10}
+\beamer@sectionintoc {11}{Conclusion}{33}{0}{11}
