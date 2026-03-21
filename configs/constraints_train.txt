@@ -11,8 +11,9 @@ protobuf<4
 # Keep Triton compatible with Torch 2.1.x (newer Triton can pull newer Torch).
 triton==2.1.0
 
-# Prefer a Transformers-era that matches older Unsloth stack expectations.
-transformers==4.46.3
+# Need a Transformers version that recognizes Qwen3 (`model_type: qwen3`).
+# Keep this pinned to avoid accidental major-version jumps.
+transformers==4.57.6
 
 # Older Unsloth releases expect TRL < 0.9.
 trl==0.8.6
