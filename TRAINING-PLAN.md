@@ -34,12 +34,16 @@ This is a life-safety system. A Chief Engineer alone in the engine room at 0300 
 - Separate training venv: `/home/mohanganesh/ship/.venv-train/` (keeps Wave 1 generation venv untouched)
 - Verified via: `scripts/train_python.sh scripts/verify_train_env.py --model-path models/student-1.7b`
   - Python: 3.10.19
-  - Torch: 2.1.2+cu118
-  - CUDA: available, 4× Tesla K80
-  - Unsloth: imports OK, but **Qwen3 models are not supported by Unsloth yet** (loader raises NotImplementedError)
-  - QLoRA/4-bit: **not supported on K80 (sm_37)** with bitsandbytes kernels; fallback fp16 LoRA smoke test passes
+  - Torch: 2.1.2+cu118 (torch CUDA: 11.8)
+  - CUDA: available, 4× Tesla K80 (sm_37)
+  - Stack: Transformers + PEFT + TRL + DeepSpeed (no Unsloth, no bitsandbytes)
+  - Verified load test:
+    - Loads `Qwen3-1.7B` in fp16 on `cuda:0`
+    - Attaches LoRA adapters via PEFT
+    - Runs a forward pass and reports loss + VRAM usage
 - Notes:
-  - Transformers was upgraded to 4.57.6 to recognize `model_type: qwen3`. A small shim in `_stubs/sitecustomize.py` is used to keep it working with torch 2.1.2.
+  - `transformers==4.51.3` is required to recognize `model_type: qwen3` for the local weights (see `models/student-1.7b/config.json`).
+  - DeepSpeed import is configured to work without a CUDA toolkit (`CUDA_HOME` not set) in the training venv.
 
 ### What does NOT exist yet (must be built in this plan)
 - `sft_teacher.jsonl` — teacher-generated raw Q/A pairs (Wave 1)

@@ -38,6 +38,16 @@ ship/maritime_pipeline/scrapers/data/**
 # Local pipeline databases / checkpoints
 *.db
 
+# Training artifacts (generated locally)
+training/checkpoints/
+training/cache/
+training/merged/
+training/**/runs/
+
+# Deployment artifacts (generated locally)
+deploy/*.gguf
+deploy/*.bin
+
 # Research/source documents (many are large and may be copyrighted)
 ship/data/
 ship/data/**

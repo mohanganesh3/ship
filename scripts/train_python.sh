@@ -12,8 +12,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV="${VENV_TRAIN:-"$ROOT_DIR/.venv-train"}"
 PYTHON="$VENV/bin/python"
 
-# Ensure our local compatibility shims (if any) are importable.
-export PYTHONPATH="$ROOT_DIR/_stubs${PYTHONPATH:+:$PYTHONPATH}"
+# Legacy compatibility shims live in `_stubs/`. These were used for earlier
+# experiments and can shadow real packages (e.g. `deepspeed`). Keep them opt-in.
+if [[ "${USE_STUBS:-0}" == "1" && -d "$ROOT_DIR/_stubs" ]]; then
+  export PYTHONPATH="$ROOT_DIR/_stubs${PYTHONPATH:+:$PYTHONPATH}"
+fi
 
 if [[ ! -x "$PYTHON" ]]; then
   echo "ERROR: training venv python not found at: $PYTHON" >&2
