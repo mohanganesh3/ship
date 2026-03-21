@@ -14,6 +14,7 @@ echo "[$TS] PHASE_2A_SFT1_4B STATUS: LAUNCHING" >> logs/pipeline_execution.log
 
 nohup numactl --interleave=all \
   .venv-train/bin/python training/run_sft1_4b.py \
+  "$@" \
   >> logs/sft1_4b_train.log 2>&1 &
 
 echo $! > logs/sft1_4b_train.pid

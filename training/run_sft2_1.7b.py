@@ -213,5 +213,61 @@ def main():
 
     log_pipeline("PHASE_2B_SFT2_1.7B STATUS: COMPLETE. Run gate check.")
 
+    # === SFT STAGE 2 GATE CHECK ===
+    # Gate: sample 20 questions, ensure concise answers (avg <= 120 words) and no reasoning tags.
+    def _wc(s: str) -> int:
+        return len([w for w in s.strip().split() if w])
+
+    model.eval()
+    tested = 0
+    ok = 0
+    total_words = 0
+
+    sample = records[:20]
+    for rec in sample:
+        q = rec.get("q", rec.get("question", ""))
+        if not q:
+            continue
+
+        prompt = (
+            f"<|im_start|>system\n{SYSTEM_PROMPT_NOTHINK}<|im_end|>\n"
+            f"<|im_start|>user\n{q}<|im_end|>\n"
+            f"<|im_start|>assistant\n"
+        )
+        input_ids = tokenizer.encode(prompt, return_tensors="pt")
+        with torch.no_grad():
+            out = model.generate(
+                input_ids,
+                max_new_tokens=160,
+                do_sample=False,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+        response = tokenizer.decode(out[0][input_ids.shape[1] :], skip_special_tokens=True)
+        tested += 1
+
+        bad_reasoning = ("<think>" in response) or ("</think>" in response) or ("/think" in response)
+        words = _wc(response)
+        total_words += words
+
+        if (not bad_reasoning) and (words <= 120):
+            ok += 1
+
+    if tested == 0:
+        log_pipeline("PHASE_2B_SFT2_1.7B GATE: FAIL — no examples tested")
+        raise SystemExit(1)
+
+    avg_words = total_words / float(tested)
+    ok_pct = ok / float(tested) * 100.0
+
+    if avg_words <= 120.0 and ok_pct >= 80.0:
+        log_pipeline(
+            f"PHASE_2B_SFT2_1.7B GATE: PASS avg_words={avg_words:.1f} ok={ok}/{tested} ({ok_pct:.1f}%)"
+        )
+    else:
+        log_pipeline(
+            f"PHASE_2B_SFT2_1.7B GATE: FAIL avg_words={avg_words:.1f} ok={ok}/{tested} ({ok_pct:.1f}%)"
+        )
+        raise SystemExit(1)
+
 if __name__ == "__main__":
     main()

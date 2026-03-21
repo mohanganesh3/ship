@@ -8,6 +8,7 @@ Hard rules:
 """
 
 import os, sys, json, time, random, logging
+import argparse
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -138,10 +139,36 @@ class SFTDataset(Dataset):
     def __getitem__(self, idx):
         return self.texts[idx]
 
-def main():
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="SFT1 (1.7B) CPU-only trainer")
+    p.add_argument(
+        "--epochs",
+        type=int,
+        default=None,
+        help="Override num_train_epochs (default: 2).",
+    )
+    p.add_argument(
+        "--extra-epoch",
+        action="store_true",
+        help="Add +1 epoch to the default (used for gate-fail recovery).",
+    )
+    return p.parse_args()
+
+def main() -> None:
     phase = "PHASE_2A_SFT1_1.7B"
+    args = parse_args()
     ensure_venv_train(phase)
-    log_pipeline(f"{phase} STATUS: STARTING. Loading from CPT checkpoint.")
+
+    base_epochs = 2
+    epochs = int(args.epochs) if args.epochs is not None else base_epochs
+    if args.extra_epoch:
+        epochs += 1
+    if epochs <= 0:
+        log_pipeline(f"{phase} FAIL — ARG_GATE: epochs must be >= 1 (got: {epochs})")
+        raise SystemExit(1)
+
+    log_pipeline(f"{phase} STATUS: STARTING. Loading from CPT checkpoint. epochs={epochs}")
 
     gate_require_dir(CPT_CHECKPOINT, phase)
     gate_require_file(SFT_DATA, phase)
@@ -194,7 +221,7 @@ def main():
 
     training_args = SFTConfig(
         output_dir=str(SFT1_CHECKPOINT),
-        num_train_epochs=2,
+        num_train_epochs=epochs,
         per_device_train_batch_size=2,
         gradient_accumulation_steps=8,
         learning_rate=2e-4,
