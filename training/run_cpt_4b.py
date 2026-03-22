@@ -61,13 +61,13 @@ VAL_MARITIME = DATA_DIR / "cpt_val_maritime.jsonl"
 VAL_GENERAL = DATA_DIR / "cpt_val_general.jsonl"
 
 MODEL_PATH = "/home/mohanganesh/ship/models/student-4b"
-MAX_SEQ_LENGTH = 512   # Shorter = faster per step; 512 gives 4x speedup vs 2048 while still packing full docs
+MAX_SEQ_LENGTH = 256   # Reduced to fit 11GB K80 VRAM with 4B + LoRA training
 # K80 12GB: keep microbatch small and recover effective batch with grad accumulation.
 PER_DEVICE_BATCH = 1
-GRAD_ACCUM = 32
+GRAD_ACCUM = 16
 
 # Dry-run overrides (keep the gate fast; full training remains unchanged)
-DRY_SEQ_LENGTH = 128
+DRY_SEQ_LENGTH = 256
 DRY_PER_DEVICE_BATCH = 1
 DRY_GRAD_ACCUM = 1
 NUM_EPOCHS = 3
@@ -542,15 +542,18 @@ def main():
     logger.info(f"Using CUDA device: {name} (capability={cap}), CUDA_VISIBLE_DEVICES={vis}")
 
     if args.dry_run:
-        log_pipeline("PHASE_1A_CPT_4B_DRY_RUN STATUS: STARTING. Single-GPU fp16 LoRA r=128")
+        log_pipeline("PHASE_1A_CPT_4B_DRY_RUN STATUS: STARTING. Single-GPU fp16 LoRA r=64")
     else:
-        log_pipeline("PHASE_1A_CPT_4B STATUS: STARTING. Single-GPU fp16 LoRA r=128")
+        log_pipeline("PHASE_1A_CPT_4B STATUS: STARTING. Single-GPU fp16 LoRA r=64")
 
     # === LOAD MODEL ===
     logger.info(f"Loading tokenizer from {MODEL_PATH}")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+
+    # Try to minimize fragmentation before loading large checkpoint shards.
+    torch.cuda.empty_cache()
 
     logger.info(f"Loading model in fp16 on CUDA from {MODEL_PATH}")
     model = AutoModelForCausalLM.from_pretrained(
@@ -569,6 +572,9 @@ def main():
     if hasattr(model, "config"):
         model.config.use_cache = False
 
+    # Reduce activation memory footprint before attaching LoRA.
+    model.gradient_checkpointing_enable()
+
     # Enable gradient checkpointing to save memory during backward
     # We have 167 GB free so this is optional, but good practice
     model.enable_input_require_grads()
@@ -576,8 +582,8 @@ def main():
     # === ATTACH LORA ===
     lora_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
-        r=128,
-        lora_alpha=128,
+        r=64,
+        lora_alpha=64,
         target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
                          "gate_proj", "up_proj", "down_proj"],
         lora_dropout=0.05,
@@ -702,7 +708,8 @@ def main():
         disable_tqdm=True,
         load_best_model_at_end=False,
         prediction_loss_only=True,
-        optim="adamw_torch",
+        # Adafactor significantly reduces optimizer state memory vs AdamW.
+        optim="adafactor",
         max_steps=max_steps,
         gradient_checkpointing=True,
     )
