@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""ORPO Preference Polish — CPU-only, 1 epoch, beta=0.1.
+"""ORPO Preference Polish — single-GPU fp16, 1 epoch, beta=0.1.
 
 Hard rules:
-- CPU-only fp32
+- Single GPU only (default: GPU1 via CUDA_VISIBLE_DEVICES=1)
+- fp16 only (no bf16)
 - Must be run from .venv-train
 - Must fail fast (gate) if required artifacts/data are missing
 """
@@ -11,12 +12,10 @@ import os, json, sys, logging, time, re
 from pathlib import Path
 from datetime import datetime, timezone
 
-os.environ.setdefault("OMP_NUM_THREADS", "48")
-os.environ.setdefault("MKL_NUM_THREADS", "48")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "1")
 
 import torch
-torch.set_num_threads(48)
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import get_peft_model, LoraConfig, TaskType, PeftModel
@@ -42,9 +41,13 @@ def log_pipeline(msg):
 
 
 def ensure_venv_train(phase_tag: str) -> None:
-    exe = os.path.realpath(sys.executable)
-    if "/.venv-train/" not in exe:
-        log_pipeline(f"{phase_tag} FAIL — ENV_GATE: must run with .venv-train python (got: {exe})")
+    exe_raw = os.path.abspath(sys.executable)
+    exe_real = os.path.realpath(sys.executable)
+    if "/.venv-train/" not in exe_raw and "/.venv-train/" not in exe_real:
+        log_pipeline(
+            f"{phase_tag} FAIL — ENV_GATE: must run with .venv-train python "
+            f"(got: exe={exe_raw}, real={exe_real})"
+        )
         raise SystemExit(1)
 
 
@@ -130,7 +133,16 @@ def load_orpo_pairs():
 def main():
     phase = "PHASE_4_ORPO_4B"
     ensure_venv_train(phase)
-    log_pipeline(f"{phase} STATUS: STARTING. beta=0.1, 1 epoch, CPU-only")
+    log_pipeline(f"{phase} STATUS: STARTING. beta=0.1, 1 epoch, single-GPU fp16")
+
+    if not torch.cuda.is_available():
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: torch.cuda.is_available() is false")
+        raise SystemExit(1)
+
+    vis = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    if vis.strip() == "":
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: CUDA_VISIBLE_DEVICES is empty")
+        raise SystemExit(1)
 
     gate_require_dir(CORRECTION_CHECKPOINT, phase)
     gate_require_file(ORPO_DATA, phase)
@@ -156,13 +168,18 @@ def main():
         tokenizer.pad_token = tokenizer.eos_token
 
     base = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL, torch_dtype=torch.float32, device_map="cpu",
+        BASE_MODEL, torch_dtype=torch.float16, device_map={"": 0},
         trust_remote_code=True, low_cpu_mem_usage=True
     )
+    if hasattr(base, "config"):
+        base.config.use_cache = False
 
     model = PeftModel.from_pretrained(base, str(CORRECTION_CHECKPOINT))
     model = model.merge_and_unload()
     logger.info("Correction LoRA merged.")
+
+    if hasattr(model, "config"):
+        model.config.use_cache = False
 
     model.enable_input_require_grads()
     lora_config = LoraConfig(
@@ -186,16 +203,17 @@ def main():
         logging_steps=25,
         save_steps=200,
         save_total_limit=2,
-        no_cuda=True,
-        use_cpu=True,
-        fp16=False,
+        no_cuda=False,
+        use_cpu=False,
+        fp16=True,
         bf16=False,
         dataloader_num_workers=0,
-        dataloader_pin_memory=False,
+        dataloader_pin_memory=True,
         report_to="none",
         max_length=512,
         max_prompt_length=256,
         remove_unused_columns=False,
+        gradient_checkpointing=True,
     )
 
     trainer = ORPOTrainer(

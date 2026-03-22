@@ -75,9 +75,13 @@ def require_requests() -> None:
 
 
 def ensure_venv_train() -> None:
-    exe = os.path.realpath(sys.executable)
-    if "/.venv-train/" not in exe:
-        msg = f"FINAL_EVAL FAIL — ENV_GATE: must run with .venv-train python (got: {exe})"
+    exe_raw = os.path.abspath(sys.executable)
+    exe_real = os.path.realpath(sys.executable)
+    if "/.venv-train/" not in exe_raw and "/.venv-train/" not in exe_real:
+        msg = (
+            "FINAL_EVAL FAIL — ENV_GATE: must run with .venv-train python "
+            f"(got: exe={exe_raw}, real={exe_real})"
+        )
         log_pipeline(msg)
         print(msg)
         sys.exit(1)

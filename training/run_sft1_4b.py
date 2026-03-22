@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""SFT Stage 1 — Reasoning First. CPU-only. Train on /think examples only.
+"""SFT Stage 1 — Reasoning First. Single-GPU fp16. Train on /think examples only.
 
 Hard rules:
-- CPU-only fp32
+- Single GPU only (default: GPU1 via CUDA_VISIBLE_DEVICES=1)
+- fp16 only (no bf16)
 - Must be run from .venv-train
 - Must fail fast (gate) if required artifacts/data are missing
 """
@@ -12,12 +13,10 @@ import argparse
 from pathlib import Path
 from datetime import datetime, timezone
 
-os.environ.setdefault("OMP_NUM_THREADS", "48")
-os.environ.setdefault("MKL_NUM_THREADS", "48")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "1")
 
 import torch
-torch.set_num_threads(48)
 
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
 from peft import get_peft_model, LoraConfig, TaskType, PeftModel
@@ -45,9 +44,13 @@ def log_pipeline(msg):
 
 
 def ensure_venv_train(phase_tag: str) -> None:
-    exe = os.path.realpath(sys.executable)
-    if "/.venv-train/" not in exe:
-        log_pipeline(f"{phase_tag} FAIL — ENV_GATE: must run with .venv-train python (got: {exe})")
+    exe_raw = os.path.abspath(sys.executable)
+    exe_real = os.path.realpath(sys.executable)
+    if "/.venv-train/" not in exe_raw and "/.venv-train/" not in exe_real:
+        log_pipeline(
+            f"{phase_tag} FAIL — ENV_GATE: must run with .venv-train python "
+            f"(got: exe={exe_raw}, real={exe_real})"
+        )
         raise SystemExit(1)
 
 
@@ -191,6 +194,26 @@ def main() -> None:
     args = parse_args()
     ensure_venv_train(phase)
 
+    if not torch.cuda.is_available():
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: torch.cuda.is_available() is false")
+        raise SystemExit(1)
+
+    vis = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    if vis.strip() == "":
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: CUDA_VISIBLE_DEVICES is empty")
+        raise SystemExit(1)
+
+    try:
+        cap = torch.cuda.get_device_capability(0)
+        name = torch.cuda.get_device_name(0)
+    except Exception as e:
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: cannot query GPU0 ({e})")
+        raise SystemExit(1)
+    if cap < (3, 7):
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: GPU compute capability {cap} < (3, 7)")
+        raise SystemExit(1)
+    logger.info(f"Using CUDA device: {name} (capability={cap}), CUDA_VISIBLE_DEVICES={vis}")
+
     base_epochs = 2
     epochs = int(args.epochs) if args.epochs is not None else base_epochs
     if args.extra_epoch:
@@ -201,7 +224,7 @@ def main() -> None:
 
     log_pipeline(f"{phase} STATUS: STARTING. Loading from CPT checkpoint. epochs={epochs}")
 
-    gate_require_dir(CPT_CHECKPOINT, phase)
+    gate_require_dir(CPT_CHECKPOINT_ROOT, phase)
     gate_require_file(SFT_DATA, phase)
     total_lines = count_nonempty_lines(SFT_DATA)
     if total_lines < 3000:
@@ -216,11 +239,13 @@ def main() -> None:
     logger.info(f"Loading base model from {BASE_MODEL}")
     base_model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
-        torch_dtype=torch.float32,
-        device_map="cpu",
+        torch_dtype=torch.float16,
+        device_map={"": 0},
         trust_remote_code=True,
         low_cpu_mem_usage=True,
     )
+    if hasattr(base_model, "config"):
+        base_model.config.use_cache = False
 
     # Merge CPT LoRA into the base model first (required)
     cpt_dir = resolve_best_cpt_checkpoint_dir(phase)
@@ -228,6 +253,9 @@ def main() -> None:
     base_model = PeftModel.from_pretrained(base_model, str(cpt_dir))
     base_model = base_model.merge_and_unload()
     logger.info("CPT LoRA merged into base weights.")
+
+    if hasattr(base_model, "config"):
+        base_model.config.use_cache = False
 
     # Attach new SFT LoRA
     base_model.enable_input_require_grads()
@@ -263,12 +291,12 @@ def main() -> None:
         logging_steps=25,
         save_steps=200,
         save_total_limit=3,
-        no_cuda=True,
-        use_cpu=True,
-        fp16=False,
+        no_cuda=False,
+        use_cpu=False,
+        fp16=True,
         bf16=False,
         dataloader_num_workers=0,
-        dataloader_pin_memory=False,
+        dataloader_pin_memory=True,
         report_to="none",
         neftune_noise_alpha=5,
         max_seq_length=512,
@@ -296,6 +324,7 @@ def main() -> None:
     logger.info("Gate: take 50 think-mode questions, check ≥70% have <think> reasoning trace")
 
     model.eval()
+    device = next(model.parameters()).device
     think_count = 0
     tested = 0
     sample = think_records[:50]
@@ -309,7 +338,7 @@ def main() -> None:
             f"<|im_start|>user\n{q}<|im_end|>\n"
             f"<|im_start|>assistant\n"
         )
-        input_ids = tokenizer.encode(prompt, return_tensors="pt")
+        input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
         with torch.no_grad():
             out = model.generate(
                 input_ids,

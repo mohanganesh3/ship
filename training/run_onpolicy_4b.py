@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""On-Policy Correction Round — CPU-only student generation + teacher judgment.
+"""On-Policy Correction Round — GPU student generation + teacher judgment.
 
 Hard rules:
-- CPU-only fp32
+- Single GPU only (default: GPU1 via CUDA_VISIBLE_DEVICES=1)
+- fp16 only (no bf16)
 - Must be run from .venv-train
 - Must fail fast (gate) if required artifacts/data are missing
 """
@@ -16,12 +17,10 @@ try:
 except Exception:  # pragma: no cover
     requests = None
 
-os.environ.setdefault("OMP_NUM_THREADS", "48")
-os.environ.setdefault("MKL_NUM_THREADS", "48")
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "1")
 
 import torch
-torch.set_num_threads(48)
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
@@ -49,9 +48,13 @@ def log_pipeline(msg):
 
 
 def ensure_venv_train(phase_tag: str) -> None:
-    exe = os.path.realpath(sys.executable)
-    if "/.venv-train/" not in exe:
-        log_pipeline(f"{phase_tag} FAIL — ENV_GATE: must run with .venv-train python (got: {exe})")
+    exe_raw = os.path.abspath(sys.executable)
+    exe_real = os.path.realpath(sys.executable)
+    if "/.venv-train/" not in exe_raw and "/.venv-train/" not in exe_real:
+        log_pipeline(
+            f"{phase_tag} FAIL — ENV_GATE: must run with .venv-train python "
+            f"(got: exe={exe_raw}, real={exe_real})"
+        )
         raise SystemExit(1)
 
 
@@ -109,6 +112,15 @@ def main():
     random.seed(1337)
     torch.manual_seed(1337)
 
+    if not torch.cuda.is_available():
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: torch.cuda.is_available() is false")
+        raise SystemExit(1)
+
+    vis = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    if vis.strip() == "":
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: CUDA_VISIBLE_DEVICES is empty")
+        raise SystemExit(1)
+
     log_pipeline(f"{phase} STATUS: STARTING")
 
     gate_require_dir(SFT2_CHECKPOINT, phase)
@@ -124,9 +136,11 @@ def main():
     # Load student model
     logger.info("Loading student model (post-SFT2)...")
     base = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL, torch_dtype=torch.float32, device_map="cpu",
+        BASE_MODEL, torch_dtype=torch.float16, device_map={"": 0},
         trust_remote_code=True, low_cpu_mem_usage=True
     )
+    if hasattr(base, "config"):
+        base.config.use_cache = True
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -134,6 +148,11 @@ def main():
     student_model = PeftModel.from_pretrained(base, str(SFT2_CHECKPOINT))
     student_model = student_model.merge_and_unload()
     student_model.eval()
+
+    if hasattr(student_model, "config"):
+        student_model.config.use_cache = True
+
+    device = next(student_model.parameters()).device
 
     # Load questions from sft_curated
     all_records = []
@@ -187,7 +206,7 @@ def main():
                 f"<|im_start|>user\n{q}<|im_end|>\n"
                 "<|im_start|>assistant\n"
             )
-            input_ids = tokenizer.encode(prompt, return_tensors="pt")
+            input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
             with torch.no_grad():
                 out = student_model.generate(
                     input_ids, max_new_tokens=200, do_sample=False,

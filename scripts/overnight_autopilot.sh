@@ -132,7 +132,7 @@ while true; do
     logp "SUPERFILTER: RUNNING pid=${SF_PID} modeA_lines=${MODEA_COUNT} curated_lines=${CURATED_COUNT}"
   else
     # If we have enough ModeA and curated is missing/small, launch SuperFilter.
-    if [[ "${MODEA_COUNT}" -ge 5000 ]] && [[ "${CURATED_COUNT}" -lt 3000 ]]; then
+    if [[ "${MODEA_COUNT}" -ge 1000 ]] && [[ "${CURATED_COUNT}" -lt 3000 ]]; then
       attempt="1"
       if [[ -f "${SUPERFILTER_ATTEMPT_FILE}" ]]; then
         attempt=$(cat "${SUPERFILTER_ATTEMPT_FILE}" || echo "1")

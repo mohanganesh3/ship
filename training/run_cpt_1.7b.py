@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""
-CPT for Qwen3-1.7B — CPU-only, fp32 LoRA r=128
-Hardware: 48 threads, 251 GB RAM, 2 NUMA nodes
-NO GPU. NO DEEPSPEED. NO NCCL. Pure HuggingFace Trainer on CPU.
+"""training/run_cpt_1.7b.py
+
+CPT for Qwen3-1.7B — single-GPU fp16 LoRA r=128 (K80-compatible)
+
+Constraints:
+- Single GPU only (default: GPU0 via CUDA_VISIBLE_DEVICES=0)
+- fp16 only (no bf16)
+- No DeepSpeed / no distributed / no NCCL requirements
 """
 
 import os
@@ -16,18 +20,14 @@ import argparse
 from pathlib import Path
 from datetime import datetime, timezone
 
-# Set CPU threading BEFORE importing torch
-os.environ.setdefault("OMP_NUM_THREADS", "48")
-os.environ.setdefault("MKL_NUM_THREADS", "48")
-os.environ.setdefault("OPENBLAS_NUM_THREADS", "48")
+# Environment MUST be configured before importing torch.
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")  # hard disable GPU visibility
-os.environ.setdefault("NCCL_P2P_DISABLE", "1")
-os.environ.setdefault("NCCL_IB_DISABLE", "1")
+
+# Default GPU assignment for watchdog/restarts.
+# NOTE: if the caller already set CUDA_VISIBLE_DEVICES, we respect it.
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "0")
 
 import torch
-torch.set_num_threads(48)
-torch.set_num_interop_threads(4)
 
 import numpy as np
 
@@ -62,8 +62,9 @@ VAL_GENERAL = DATA_DIR / "cpt_val_general.jsonl"
 
 MODEL_PATH = "/home/mohanganesh/ship/models/student-1.7b"
 MAX_SEQ_LENGTH = 512   # Shorter = faster per step; 512 gives 4x speedup vs 2048 while still packing full docs
-PER_DEVICE_BATCH = 4   # Batch=4 with seq=512 = 2048 tokens/step, good CPU vectorization
-GRAD_ACCUM = 8         # Effective batch = 32 samples = 16384 tokens
+# K80 12GB: keep microbatch small and recover effective batch with grad accumulation.
+PER_DEVICE_BATCH = 1
+GRAD_ACCUM = 32
 
 # Dry-run overrides (keep the gate fast; full training remains unchanged)
 DRY_SEQ_LENGTH = 128
@@ -76,6 +77,13 @@ WEIGHT_DECAY = 0.01
 SAVE_STEPS = 300
 LOGGING_STEPS = 25
 EVAL_PPL_STEPS = 300   # Compute perplexity every 300 steps
+
+
+def _get_model_device(model: torch.nn.Module) -> torch.device:
+    try:
+        return next(model.parameters()).device
+    except StopIteration:
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def _atomic_write_json(path: Path, payload: dict) -> None:
@@ -103,9 +111,13 @@ def log_pipeline(msg: str):
 
 
 def ensure_venv_train(phase_tag: str) -> None:
-    exe = os.path.realpath(sys.executable)
-    if "/.venv-train/" not in exe:
-        log_pipeline(f"{phase_tag} FAIL — ENV_GATE: must run with .venv-train python (got: {exe})")
+    exe_raw = os.path.abspath(sys.executable)
+    exe_real = os.path.realpath(sys.executable)
+    if "/.venv-train/" not in exe_raw and "/.venv-train/" not in exe_real:
+        log_pipeline(
+            f"{phase_tag} FAIL — ENV_GATE: must run with .venv-train python "
+            f"(got: exe={exe_raw}, real={exe_real})"
+        )
         raise SystemExit(1)
 
 
@@ -119,6 +131,27 @@ def load_jsonl(path: Path) -> list[dict]:
                     records.append(json.loads(line))
                 except Exception:
                     pass
+    return records
+
+
+def load_jsonl_head(path: Path, max_records: int) -> list[dict]:
+    """Load up to max_records records from a jsonl file (fast dry-run helper)."""
+    records: list[dict] = []
+    if max_records <= 0:
+        return records
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            if len(records) >= max_records:
+                break
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except Exception:
+                continue
+            if isinstance(obj, dict):
+                records.append(obj)
     return records
 
 
@@ -358,6 +391,7 @@ class PerplexityCallback:
                 total_loss = 0.0
                 total_tokens = 0
                 eos = inner_self.tokenizer.eos_token_id or 2
+                device = _get_model_device(inner_self.model)
 
                 sample = records[:max_samples]
                 with torch.no_grad():
@@ -371,7 +405,7 @@ class PerplexityCallback:
                         )
                         if len(ids) < 8:
                             continue
-                        input_ids = torch.tensor([ids], dtype=torch.long)
+                        input_ids = torch.tensor([ids], dtype=torch.long, device=device)
                         out = inner_self.model(input_ids=input_ids, labels=input_ids)
                         total_loss += out.loss.item() * (len(ids) - 1)
                         total_tokens += len(ids) - 1
@@ -478,6 +512,7 @@ def compute_perplexity_simple(model, tokenizer, records, max_samples=50):
     model.eval()
     total_loss = 0.0
     total_tokens = 0
+    device = _get_model_device(model)
     with torch.no_grad():
         for rec in records[:max_samples]:
             text = rec.get("text", "") if isinstance(rec, dict) else str(rec)
@@ -486,7 +521,7 @@ def compute_perplexity_simple(model, tokenizer, records, max_samples=50):
             ids = tokenizer.encode(text, add_special_tokens=False, truncation=True, max_length=512)
             if len(ids) < 8:
                 continue
-            input_ids = torch.tensor([ids], dtype=torch.long)
+            input_ids = torch.tensor([ids], dtype=torch.long, device=device)
             out = model(input_ids=input_ids, labels=input_ids)
             total_loss += out.loss.item() * (len(ids) - 1)
             total_tokens += len(ids) - 1
@@ -505,10 +540,33 @@ def main():
     phase_tag = "PHASE_1A_CPT_1.7B_DRY_RUN" if args.dry_run else "PHASE_1A_CPT_1.7B"
     ensure_venv_train(phase_tag)
 
+    if not torch.cuda.is_available():
+        log_pipeline(f"{phase_tag} FAIL — CUDA_GATE: torch.cuda.is_available() is false")
+        raise SystemExit(1)
+
+    # We expect exactly one visible GPU (CUDA_VISIBLE_DEVICES pins it).
+    vis = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    if vis.strip() == "":
+        log_pipeline(f"{phase_tag} FAIL — CUDA_GATE: CUDA_VISIBLE_DEVICES is empty")
+        raise SystemExit(1)
+
+    try:
+        cap = torch.cuda.get_device_capability(0)
+        name = torch.cuda.get_device_name(0)
+    except Exception as e:
+        log_pipeline(f"{phase_tag} FAIL — CUDA_GATE: cannot query GPU0 ({e})")
+        raise SystemExit(1)
+
+    if cap < (3, 7):
+        log_pipeline(f"{phase_tag} FAIL — CUDA_GATE: GPU compute capability {cap} < (3, 7)")
+        raise SystemExit(1)
+
+    logger.info(f"Using CUDA device: {name} (capability={cap}), CUDA_VISIBLE_DEVICES={vis}")
+
     if args.dry_run:
-        log_pipeline("PHASE_1A_CPT_1.7B_DRY_RUN STATUS: STARTING. CPU-only fp32 LoRA r=128")
+        log_pipeline("PHASE_1A_CPT_1.7B_DRY_RUN STATUS: STARTING. Single-GPU fp16 LoRA r=128")
     else:
-        log_pipeline("PHASE_1A_CPT_1.7B STATUS: STARTING. CPU-only fp32 LoRA r=128")
+        log_pipeline("PHASE_1A_CPT_1.7B STATUS: STARTING. Single-GPU fp16 LoRA r=128")
 
     # === LOAD MODEL ===
     logger.info(f"Loading tokenizer from {MODEL_PATH}")
@@ -516,16 +574,23 @@ def main():
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    logger.info(f"Loading model in fp32 on CPU from {MODEL_PATH}")
+    logger.info(f"Loading model in fp16 on CUDA from {MODEL_PATH}")
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_PATH,
-        torch_dtype=torch.float32,   # fp32 is FASTER than fp16 on CPU
-        device_map="cpu",
+        torch_dtype=torch.float16,
+        device_map={"": 0},
         trust_remote_code=True,
         low_cpu_mem_usage=True,
     )
-    model_gb = model.get_memory_footprint() / 1e9
-    logger.info(f"Model loaded. Size: {model_gb:.2f} GB fp32")
+    try:
+        model_gb = model.get_memory_footprint() / 1e9
+        logger.info(f"Model loaded. Size: {model_gb:.2f} GB")
+    except Exception:
+        logger.info("Model loaded.")
+
+    # Required for training stability and memory use with gradient checkpointing.
+    if hasattr(model, "config"):
+        model.config.use_cache = False
 
     # Enable gradient checkpointing to save memory during backward
     # We have 167 GB free so this is optional, but good practice
@@ -548,10 +613,17 @@ def main():
     logger.info(f"Trainable LoRA parameters: {trainable/1e6:.1f}M")
 
     # === LOAD VALIDATION SETS ===
-    logger.info("Loading validation sets...")
-    val_maritime_records = load_jsonl(VAL_MARITIME)
-    val_general_records = load_jsonl(VAL_GENERAL)
-    logger.info(f"Val maritime: {len(val_maritime_records)}, val general: {len(val_general_records)}")
+    # Validation JSONLs can be large; keep --dry-run fast.
+    if args.dry_run:
+        val_maritime_records = []
+        val_general_records = []
+    else:
+        logger.info("Loading validation sets...")
+        val_maritime_records = load_jsonl(VAL_MARITIME)
+        val_general_records = load_jsonl(VAL_GENERAL)
+        logger.info(
+            f"Val maritime: {len(val_maritime_records)}, val general: {len(val_general_records)}"
+        )
 
     # === SELECT TRAINING SHAPE ===
     if args.dry_run:
@@ -568,8 +640,8 @@ def main():
     # For dry-run, do a tiny in-memory pack so we can validate end-to-end quickly.
     if args.dry_run:
         # tiny subset
-        maritime_records = load_jsonl(CPT_CORPUS)[:200]
-        general_records = load_jsonl(GENERAL_REPLAY)[:50]
+        maritime_records = load_jsonl_head(CPT_CORPUS, 200)
+        general_records = load_jsonl_head(GENERAL_REPLAY, 50)
         sequences: list[list[int]] = []
         eos = tokenizer.eos_token_id or 2
         buf: list[int] = []
@@ -651,19 +723,17 @@ def main():
         logging_first_step=True,
         save_steps=save_steps,
         save_total_limit=3,
-        no_cuda=True,              # CPU-ONLY
-        use_cpu=True,              # CPU-ONLY
-        fp16=False,                # fp32 is faster on CPU
+        fp16=True,
         bf16=False,
         dataloader_num_workers=0,  # 0 = main process (avoids CPU contention with teacher)
-        dataloader_pin_memory=False,
+        dataloader_pin_memory=True,
         report_to="none",
         disable_tqdm=True,
         load_best_model_at_end=False,
         prediction_loss_only=True,
         optim="adamw_torch",
         max_steps=max_steps,
-        gradient_checkpointing=False,  # We have 167 GB RAM, don't need it
+        gradient_checkpointing=False,
     )
 
     data_collator = DataCollatorForLanguageModeling(
