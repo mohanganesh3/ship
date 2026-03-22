@@ -12,6 +12,9 @@ CPT_LOG="${LOG_DIR}/cpt_1.7b_train.log"
 WAVE1_LOG="${LOG_DIR}/wave1_generation.log"
 MODEA_JSONL="${ROOT}/ship/maritime_pipeline/data/generation/wave1_modeA_raw.jsonl"
 
+CPT_PID_FILE="${LOG_DIR}/cpt_1.7b_train.pid"
+WAVE1_PID="1724216"
+
 TEACHER_URL="http://127.0.0.1:8000/health"
 
 cd "${ROOT}"
@@ -21,6 +24,23 @@ echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] MONITOR STATUS: STARTING" >> "${PIPELINE_
 
 while true; do
   TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  CPT_ALIVE="unknown"
+  if [[ -f "${CPT_PID_FILE}" ]]; then
+    CPT_PID=$(cat "${CPT_PID_FILE}" || true)
+    if [[ "${CPT_PID}" =~ ^[0-9]+$ ]] && kill -0 "${CPT_PID}" 2>/dev/null; then
+      CPT_ALIVE="up"
+    else
+      CPT_ALIVE="down"
+    fi
+  fi
+
+  WAVE1_ALIVE="unknown"
+  if [[ "${WAVE1_PID}" =~ ^[0-9]+$ ]] && kill -0 "${WAVE1_PID}" 2>/dev/null; then
+    WAVE1_ALIVE="up"
+  else
+    WAVE1_ALIVE="down"
+  fi
 
   CPT_TAIL="(missing)"
   if [[ -f "${CPT_LOG}" ]]; then
@@ -44,7 +64,7 @@ while true; do
     TEACHER_OK="up"
   fi
 
-  echo "[${TS}] MONITOR SUMMARY: modeA_lines=${MODEA_COUNT} teacher8000=${TEACHER_OK} cpt_tail='${CPT_TAIL}' wave1_tail='${W1_TAIL}'" >> "${PIPELINE_LOG}"
+  echo "[${TS}] MONITOR SUMMARY: cpt=${CPT_ALIVE} wave1=${WAVE1_ALIVE} modeA_lines=${MODEA_COUNT} teacher8000=${TEACHER_OK} cpt_tail='${CPT_TAIL}' wave1_tail='${W1_TAIL}'" >> "${PIPELINE_LOG}"
 
   # 30 minutes
   sleep 1800
