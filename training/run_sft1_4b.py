@@ -1,0 +1,375 @@
+#!/usr/bin/env python3
+"""SFT Stage 1 — Reasoning First. Single-GPU fp16. Train on /think examples only.
+
+Hard rules:
+- Single GPU only (default: GPU1 via CUDA_VISIBLE_DEVICES=1)
+- fp16 only (no bf16)
+- Must be run from .venv-train
+- Must fail fast (gate) if required artifacts/data are missing
+"""
+
+import os, sys, json, time, random, logging
+import argparse
+from pathlib import Path
+from datetime import datetime, timezone
+
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "1")
+
+import torch
+
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
+from peft import get_peft_model, LoraConfig, TaskType, PeftModel
+from trl import SFTTrainer, SFTConfig
+from torch.utils.data import Dataset
+
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(message)s')
+logger = logging.getLogger(__name__)
+
+PIPELINE_LOG = Path("/home/mohanganesh/ship/logs/pipeline_execution.log")
+CPT_CHECKPOINT_ROOT = Path("/home/mohanganesh/ship/training/checkpoints/cpt-4b")
+SFT1_CHECKPOINT = Path("/home/mohanganesh/ship/training/checkpoints/sft1-4b")
+SFT_DATA = Path("/home/mohanganesh/ship/ship/maritime_pipeline/data/final/sft_curated.jsonl")
+BASE_MODEL = "/home/mohanganesh/ship/models/student-4b"
+
+SYSTEM_PROMPT_THINK = """You are an expert maritime assistant with deep knowledge of vessel operations, safety procedures, and maritime regulations including SOLAS, MARPOL, STCW, COLREGs, and ISM Code. Answer questions only from your training knowledge. If a question is outside your knowledge or you cannot answer with confidence, say exactly: "I don't have sufficient information about this specific topic."
+/think"""
+
+def log_pipeline(msg):
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    PIPELINE_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(PIPELINE_LOG, "a") as f:
+        f.write(f"[{ts}] {msg}\n")
+    logger.info(msg)
+
+
+def ensure_venv_train(phase_tag: str) -> None:
+    exe_raw = os.path.abspath(sys.executable)
+    exe_real = os.path.realpath(sys.executable)
+    if "/.venv-train/" not in exe_raw and "/.venv-train/" not in exe_real:
+        log_pipeline(
+            f"{phase_tag} FAIL — ENV_GATE: must run with .venv-train python "
+            f"(got: exe={exe_raw}, real={exe_real})"
+        )
+        raise SystemExit(1)
+
+
+def count_nonempty_lines(path: Path) -> int:
+    n = 0
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                n += 1
+    return n
+
+
+def gate_require_file(path: Path, phase_tag: str) -> None:
+    if not path.exists():
+        log_pipeline(f"{phase_tag} FAIL — DATASET_GATE: required file not found: {path}")
+        raise SystemExit(1)
+
+
+def gate_require_dir(path: Path, phase_tag: str) -> None:
+    if not path.exists():
+        log_pipeline(f"{phase_tag} FAIL — ARTIFACT_GATE: required path not found: {path}")
+        raise SystemExit(1)
+
+
+def resolve_best_cpt_checkpoint_dir(phase_tag: str) -> Path:
+    """Prefer final checkpoint if present; otherwise pick latest checkpoint-N."""
+    final_dir = CPT_CHECKPOINT_ROOT / "final"
+    if final_dir.exists():
+        return final_dir
+
+    if not CPT_CHECKPOINT_ROOT.exists():
+        log_pipeline(f"{phase_tag} FAIL — ARTIFACT_GATE: CPT checkpoint root missing: {CPT_CHECKPOINT_ROOT}")
+        raise SystemExit(1)
+
+    best_step = -1
+    best_dir: Path | None = None
+    for p in CPT_CHECKPOINT_ROOT.glob("checkpoint-*"):
+        if not p.is_dir():
+            continue
+        try:
+            step = int(p.name.split("-", 1)[1])
+        except Exception:
+            continue
+        if step > best_step:
+            best_step = step
+            best_dir = p
+
+    if best_dir is None:
+        log_pipeline(
+            f"{phase_tag} FAIL — ARTIFACT_GATE: no CPT checkpoints found under {CPT_CHECKPOINT_ROOT}"
+        )
+        raise SystemExit(1)
+    return best_dir
+
+def load_think_examples():
+    """Load only /think mode examples from sft_curated.jsonl"""
+    records = []
+    with open(SFT_DATA) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            mode = rec.get("mode", "")
+            qtype = rec.get("type", "")
+            has_thinking = bool(rec.get("thinking", ""))
+            if mode == "think" or has_thinking or qtype in ("troubleshooting", "calculation", "diagnostic"):
+                records.append(rec)
+    logger.info(f"Loaded {len(records)} /think mode examples")
+    if len(records) < 500:
+        # Fallback: use all records with "step" in answer (procedural reasoning)
+        with open(SFT_DATA) as f:
+            for line in f:
+                line = line.strip()
+                if not line: continue
+                try:
+                    rec = json.loads(line)
+                except Exception:
+                    continue
+                ans = rec.get("a", rec.get("answer", ""))
+                if "step" in ans.lower() and rec not in records:
+                    records.append(rec)
+        logger.info(f"After fallback: {len(records)} examples")
+    return records
+
+def format_think_record(rec, tokenizer):
+    """Format as Qwen3 chat template with /think"""
+    q = rec.get("q", rec.get("question", ""))
+    thinking = rec.get("thinking", "")
+    a = rec.get("a", rec.get("answer", ""))
+
+    if not thinking:
+        thinking = a  # Use answer as thinking trace if no explicit thinking
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT_THINK},
+        {"role": "user", "content": q},
+        {"role": "assistant", "content": f"<think>\n{thinking}\n</think>\n{a}"}
+    ]
+
+    try:
+        text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+    except Exception:
+        # Fallback formatting
+        text = (
+            f"<|im_start|>system\n{SYSTEM_PROMPT_THINK}<|im_end|>\n"
+            f"<|im_start|>user\n{q}<|im_end|>\n"
+            f"<|im_start|>assistant\n<think>\n{thinking}\n</think>\n{a}<|im_end|>"
+        )
+    return {"text": text}
+
+class SFTDataset(Dataset):
+    def __init__(self, formatted_texts):
+        self.texts = formatted_texts
+    def __len__(self):
+        return len(self.texts)
+    def __getitem__(self, idx):
+        return self.texts[idx]
+
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="SFT1 (4B) CPU-only trainer")
+    p.add_argument(
+        "--epochs",
+        type=int,
+        default=None,
+        help="Override num_train_epochs (default: 2).",
+    )
+    p.add_argument(
+        "--extra-epoch",
+        action="store_true",
+        help="Add +1 epoch to the default (used for gate-fail recovery).",
+    )
+    return p.parse_args()
+
+def main() -> None:
+    phase = "PHASE_2A_SFT1_4B"
+    args = parse_args()
+    ensure_venv_train(phase)
+
+    if not torch.cuda.is_available():
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: torch.cuda.is_available() is false")
+        raise SystemExit(1)
+
+    vis = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    if vis.strip() == "":
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: CUDA_VISIBLE_DEVICES is empty")
+        raise SystemExit(1)
+
+    try:
+        cap = torch.cuda.get_device_capability(0)
+        name = torch.cuda.get_device_name(0)
+    except Exception as e:
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: cannot query GPU0 ({e})")
+        raise SystemExit(1)
+    if cap < (3, 7):
+        log_pipeline(f"{phase} FAIL — CUDA_GATE: GPU compute capability {cap} < (3, 7)")
+        raise SystemExit(1)
+    logger.info(f"Using CUDA device: {name} (capability={cap}), CUDA_VISIBLE_DEVICES={vis}")
+
+    base_epochs = 2
+    epochs = int(args.epochs) if args.epochs is not None else base_epochs
+    if args.extra_epoch:
+        epochs += 1
+    if epochs <= 0:
+        log_pipeline(f"{phase} FAIL — ARG_GATE: epochs must be >= 1 (got: {epochs})")
+        raise SystemExit(1)
+
+    log_pipeline(f"{phase} STATUS: STARTING. Loading from CPT checkpoint. epochs={epochs}")
+
+    gate_require_dir(CPT_CHECKPOINT_ROOT, phase)
+    gate_require_file(SFT_DATA, phase)
+    total_lines = count_nonempty_lines(SFT_DATA)
+    if total_lines < 3000:
+        log_pipeline(f"{phase} FAIL — DATASET_GATE: sft_curated.jsonl has {total_lines} non-empty lines (< 3000)")
+        raise SystemExit(1)
+
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    # Load base model and apply CPT LoRA checkpoint
+    logger.info(f"Loading base model from {BASE_MODEL}")
+    base_model = AutoModelForCausalLM.from_pretrained(
+        BASE_MODEL,
+        torch_dtype=torch.float16,
+        device_map={"": 0},
+        trust_remote_code=True,
+        low_cpu_mem_usage=True,
+    )
+    if hasattr(base_model, "config"):
+        base_model.config.use_cache = False
+
+    # Merge CPT LoRA into the base model first (required)
+    cpt_dir = resolve_best_cpt_checkpoint_dir(phase)
+    logger.info(f"Loading CPT LoRA from {cpt_dir}")
+    base_model = PeftModel.from_pretrained(base_model, str(cpt_dir))
+    base_model = base_model.merge_and_unload()
+    logger.info("CPT LoRA merged into base weights.")
+
+    if hasattr(base_model, "config"):
+        base_model.config.use_cache = False
+
+    # Attach new SFT LoRA
+    base_model.enable_input_require_grads()
+    lora_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        r=32, lora_alpha=32,
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+        lora_dropout=0.05, bias="none",
+    )
+    model = get_peft_model(base_model, lora_config)
+    model.print_trainable_parameters()
+
+    # Load and format data
+    think_records = load_think_examples()
+    if not think_records:
+        log_pipeline(f"{phase} FAIL — DATASET_GATE: no /think examples loaded from {SFT_DATA}")
+        raise SystemExit(1)
+    formatted = [format_think_record(r, tokenizer) for r in think_records]
+    dataset = SFTDataset(formatted)
+    logger.info(f"SFT Stage 1 dataset: {len(dataset)} examples")
+
+    SFT1_CHECKPOINT.mkdir(parents=True, exist_ok=True)
+
+    training_args = SFTConfig(
+        output_dir=str(SFT1_CHECKPOINT),
+        num_train_epochs=epochs,
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=8,
+        learning_rate=2e-4,
+        warmup_ratio=0.03,
+        weight_decay=0.01,
+        lr_scheduler_type="cosine",
+        logging_steps=25,
+        save_steps=200,
+        save_total_limit=3,
+        no_cuda=False,
+        use_cpu=False,
+        fp16=True,
+        bf16=False,
+        dataloader_num_workers=0,
+        dataloader_pin_memory=True,
+        report_to="none",
+        neftune_noise_alpha=5,
+        max_seq_length=512,
+        dataset_text_field="text",
+    )
+
+    trainer = SFTTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=dataset,
+        processing_class=tokenizer,
+    )
+
+    logger.info("Starting SFT Stage 1 training...")
+    log_pipeline("PHASE_2A_SFT1_4B STATUS: TRAINING STARTED")
+    trainer.train()
+
+    trainer.save_model(str(SFT1_CHECKPOINT / "final"))
+    tokenizer.save_pretrained(str(SFT1_CHECKPOINT / "final"))
+
+    log_pipeline("PHASE_2A_SFT1_4B STATUS: COMPLETE. Now run gate check.")
+
+    # === SFT STAGE 1 GATE CHECK ===
+    logger.info("Running SFT Stage 1 gate check...")
+    logger.info("Gate: take 50 think-mode questions, check ≥70% have <think> reasoning trace")
+
+    model.eval()
+    device = next(model.parameters()).device
+    think_count = 0
+    tested = 0
+    sample = think_records[:50]
+
+    for rec in sample:
+        q = rec.get("q", rec.get("question", ""))
+        if not q:
+            continue
+        prompt = (
+            f"<|im_start|>system\n{SYSTEM_PROMPT_THINK}<|im_end|>\n"
+            f"<|im_start|>user\n{q}<|im_end|>\n"
+            f"<|im_start|>assistant\n"
+        )
+        input_ids = tokenizer.encode(prompt, return_tensors="pt").to(device)
+        with torch.no_grad():
+            out = model.generate(
+                input_ids,
+                max_new_tokens=256,
+                do_sample=False,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+        response = tokenizer.decode(out[0][input_ids.shape[1]:], skip_special_tokens=True)
+        tested += 1
+        # Check for reasoning trace with >20 words
+        if "<think>" in response and "</think>" in response:
+            think_start = response.index("<think>") + len("<think>")
+            think_end = response.index("</think>")
+            think_text = response[think_start:think_end].strip()
+            if len(think_text.split()) > 20:
+                think_count += 1
+
+    if tested == 0:
+        logger.error("GATE FAIL: no examples tested")
+        log_pipeline("PHASE_2A_SFT1_4B GATE: FAIL — no examples tested")
+        sys.exit(1)
+
+    pct = think_count / tested * 100
+    gate_pass = pct >= 70
+    logger.info(f"SFT Stage 1 Gate: {think_count}/{tested} ({pct:.1f}%) have reasoning trace — need 70%")
+
+    if gate_pass:
+        log_pipeline(f"PHASE_2A_SFT1_4B GATE: PASS ({pct:.1f}% reasoning traces)")
+    else:
+        log_pipeline(f"PHASE_2A_SFT1_4B GATE: FAIL ({pct:.1f}% < 70%). Need more training.")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
