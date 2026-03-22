@@ -9,8 +9,10 @@ LOG_DIR="${ROOT}/logs"
 PIPELINE_LOG="${LOG_DIR}/pipeline_execution.log"
 
 CPT_LOG="${LOG_DIR}/cpt_1.7b_train.log"
-WAVE1_LOG="${LOG_DIR}/wave1_generation.log"
-MODEA_JSONL="${ROOT}/ship/maritime_pipeline/data/generation/wave1_modeA_raw.jsonl"
+GEN_DIR="${ROOT}/ship/maritime_pipeline/data/generation"
+WAVE1_LOG="${GEN_DIR}/wave1_generation.log"
+WAVE1_LOG_FALLBACK="${LOG_DIR}/wave1_generation.log"
+MODEA_JSONL="${GEN_DIR}/wave1_modeA_raw.jsonl"
 
 CPT_PID_FILE="${LOG_DIR}/cpt_1.7b_train.pid"
 WAVE1_PID="1724216"
@@ -50,6 +52,8 @@ while true; do
   W1_TAIL="(missing)"
   if [[ -f "${WAVE1_LOG}" ]]; then
     W1_TAIL=$(tail -n 50 "${WAVE1_LOG}" | tr '\n' ' ' | tail -c 2000 || true)
+  elif [[ -f "${WAVE1_LOG_FALLBACK}" ]]; then
+    W1_TAIL=$(tail -n 50 "${WAVE1_LOG_FALLBACK}" | tr '\n' ' ' | tail -c 2000 || true)
   elif [[ -f "${MODEA_JSONL}" ]]; then
     W1_TAIL=$(tail -n 5 "${MODEA_JSONL}" | tr '\n' ' ' | tail -c 2000 || true)
   fi

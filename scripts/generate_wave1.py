@@ -356,7 +356,9 @@ def call_teacher(
 
     for attempt in range(1, retries + 1):
         try:
-            resp = requests.post(url, json=payload, timeout=timeout)
+            # Hard requirement for this pipeline: allow enough time for a large CPU-only
+            # teacher model to respond. Keep this at 180s to avoid premature client aborts.
+            resp = requests.post(url, json=payload, timeout=180)
             if resp.status_code in {502, 503, 504}:
                 raise RuntimeError(f"server_not_ready_http_{resp.status_code}")
             resp.raise_for_status()
@@ -384,6 +386,7 @@ class PortWorker(threading.Thread):
     def __init__(
         self,
         port: int,
+        port_sem: "threading.Semaphore",
         q: Queue,
         out_fh,
         progress: "ProgressStore",
@@ -393,6 +396,7 @@ class PortWorker(threading.Thread):
     ) -> None:
         super().__init__(daemon=True)
         self.port = port
+        self.port_sem = port_sem
         self.q = q
         self.out_fh = out_fh
         self.progress = progress
@@ -421,15 +425,20 @@ class PortWorker(threading.Thread):
             last_issues: List[str] = []
             for attempt in range(1, self.args.sample_retries + 1):
                 try:
-                    content = call_teacher(
-                        self.port,
-                        system=system,
-                        user=job.instruction,
-                        temperature=self.args.temperature,
-                        max_tokens=self.args.max_tokens,
-                        timeout=self.args.request_timeout,
-                        retries=self.args.request_retries,
-                    )
+                    # Critical: llama-server is typically run with low parallelism.
+                    # If we allow many concurrent requests to the same port, requests
+                    # can queue server-side and hit client timeouts, tanking throughput.
+                    # Serialize (or cap) in-flight requests per port.
+                    with self.port_sem:
+                        content = call_teacher(
+                            self.port,
+                            system=system,
+                            user=job.instruction,
+                            temperature=self.args.temperature,
+                            max_tokens=self.args.max_tokens,
+                            timeout=self.args.request_timeout,
+                            retries=self.args.request_retries,
+                        )
                 except Exception as e:
                     last_issues = [f"request_error({e})"]
                     continue
@@ -577,12 +586,21 @@ def main() -> int:
     ap.add_argument("--mode", choices=["A", "B", "C", "all"], default="A")
     ap.add_argument("--ports", default="8000,8001")
     ap.add_argument("--max-chunks", type=int, default=0, help="0 means no limit")
-    ap.add_argument("--max-chars", type=int, default=7000, help="truncate excerpt to this many chars")
-    ap.add_argument("--temperature", type=float, default=0.2)
-    ap.add_argument("--max-tokens", type=int, default=700)
+    # Important for CPU-only large teachers: prompt-eval dominates. Keep excerpts short.
+    ap.add_argument("--max-chars", type=int, default=2000, help="truncate excerpt to this many chars")
+    # Defaults tuned for large CPU-only teachers: keep responses short and deterministic.
+    ap.add_argument("--temperature", type=float, default=0.1)
+    ap.add_argument("--max-tokens", type=int, default=150)
     ap.add_argument("--request-timeout", type=int, default=180)
-    ap.add_argument("--request-retries", type=int, default=12)
-    ap.add_argument("--sample-retries", type=int, default=2)
+    # Requirement: retry failed requests 3 times, then skip (do not crash).
+    ap.add_argument("--request-retries", type=int, default=3)
+    ap.add_argument("--sample-retries", type=int, default=1)
+    ap.add_argument(
+        "--max-inflight-per-port",
+        type=int,
+        default=1,
+        help="Cap concurrent requests per teacher port to reduce server-side queueing/timeouts",
+    )
     ap.add_argument("--seed", type=int, default=13)
     args = ap.parse_args()
 
@@ -602,6 +620,8 @@ def main() -> int:
     install_signal_handlers(stop_event, progress)
 
     ports = parse_ports(args.ports)
+    max_inflight = max(1, int(args.max_inflight_per_port))
+    port_sems: Dict[int, threading.Semaphore] = {p: threading.Semaphore(max_inflight) for p in ports}
 
     out_files = {
         "A": out_dir / "wave1_modeA_raw.jsonl",
@@ -635,6 +655,7 @@ def main() -> int:
         for p in ports:
             w = PortWorker(
                 port=p,
+                port_sem=port_sems[p],
                 q=jobs_by_mode[m],
                 out_fh=out_fhs[m],
                 progress=progress,
