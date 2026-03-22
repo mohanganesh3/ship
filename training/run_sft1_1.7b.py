@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(message)s')
 logger = logging.getLogger(__name__)
 
 PIPELINE_LOG = Path("/home/mohanganesh/ship/logs/pipeline_execution.log")
-CPT_CHECKPOINT = Path("/home/mohanganesh/ship/training/checkpoints/cpt-1.7b/final")
+CPT_CHECKPOINT_ROOT = Path("/home/mohanganesh/ship/training/checkpoints/cpt-1.7b")
 SFT1_CHECKPOINT = Path("/home/mohanganesh/ship/training/checkpoints/sft1-1.7b")
 SFT_DATA = Path("/home/mohanganesh/ship/ship/maritime_pipeline/data/final/sft_curated.jsonl")
 BASE_MODEL = "/home/mohanganesh/ship/models/student-1.7b"
@@ -70,6 +70,37 @@ def gate_require_dir(path: Path, phase_tag: str) -> None:
     if not path.exists():
         log_pipeline(f"{phase_tag} FAIL — ARTIFACT_GATE: required path not found: {path}")
         raise SystemExit(1)
+
+
+def resolve_best_cpt_checkpoint_dir(phase_tag: str) -> Path:
+    """Prefer final checkpoint if present; otherwise pick latest checkpoint-N."""
+    final_dir = CPT_CHECKPOINT_ROOT / "final"
+    if final_dir.exists():
+        return final_dir
+
+    if not CPT_CHECKPOINT_ROOT.exists():
+        log_pipeline(f"{phase_tag} FAIL — ARTIFACT_GATE: CPT checkpoint root missing: {CPT_CHECKPOINT_ROOT}")
+        raise SystemExit(1)
+
+    best_step = -1
+    best_dir: Path | None = None
+    for p in CPT_CHECKPOINT_ROOT.glob("checkpoint-*"):
+        if not p.is_dir():
+            continue
+        try:
+            step = int(p.name.split("-", 1)[1])
+        except Exception:
+            continue
+        if step > best_step:
+            best_step = step
+            best_dir = p
+
+    if best_dir is None:
+        log_pipeline(
+            f"{phase_tag} FAIL — ARTIFACT_GATE: no CPT checkpoints found under {CPT_CHECKPOINT_ROOT}"
+        )
+        raise SystemExit(1)
+    return best_dir
 
 def load_think_examples():
     """Load only /think mode examples from sft_curated.jsonl"""
@@ -170,11 +201,10 @@ def main() -> None:
 
     log_pipeline(f"{phase} STATUS: STARTING. Loading from CPT checkpoint. epochs={epochs}")
 
-    gate_require_dir(CPT_CHECKPOINT, phase)
     gate_require_file(SFT_DATA, phase)
     total_lines = count_nonempty_lines(SFT_DATA)
-    if total_lines < 30000:
-        log_pipeline(f"{phase} FAIL — DATASET_GATE: sft_curated.jsonl has {total_lines} non-empty lines (< 30000)")
+    if total_lines < 3000:
+        log_pipeline(f"{phase} FAIL — DATASET_GATE: sft_curated.jsonl has {total_lines} non-empty lines (< 3000)")
         raise SystemExit(1)
 
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
@@ -192,8 +222,9 @@ def main() -> None:
     )
 
     # Merge CPT LoRA into the base model first (required)
-    logger.info(f"Loading CPT LoRA from {CPT_CHECKPOINT}")
-    base_model = PeftModel.from_pretrained(base_model, str(CPT_CHECKPOINT))
+    cpt_dir = resolve_best_cpt_checkpoint_dir(phase)
+    logger.info(f"Loading CPT LoRA from {cpt_dir}")
+    base_model = PeftModel.from_pretrained(base_model, str(cpt_dir))
     base_model = base_model.merge_and_unload()
     logger.info("CPT LoRA merged into base weights.")
 

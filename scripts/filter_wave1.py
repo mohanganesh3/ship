@@ -349,8 +349,8 @@ def parse_args() -> argparse.Namespace:
 
     p.add_argument("--out", default=DEFAULT_OUT)
 
-    p.add_argument("--ifd-min", type=float, default=0.03)
-    p.add_argument("--ifd-max", type=float, default=0.97)
+    p.add_argument("--ifd-min", type=float, default=0.05)
+    p.add_argument("--ifd-max", type=float, default=0.95)
     p.add_argument("--very-low-keep", type=int, default=500)
 
     p.add_argument("--max-records", type=int, default=0, help="Optional cap for debugging (0 = no cap).")
@@ -364,7 +364,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--widen-ifd",
         action="store_true",
-        help="Widen IFD keep range to 0.02–0.98 (use only if final count is below gate).",
+        help="Widen IFD keep range to 0.01–0.99 (use only if final count is below gate).",
     )
 
     return p.parse_args()
@@ -381,7 +381,7 @@ def main() -> int:
     _append_pipeline_log(phase, "RUNNING", "starting")
 
     if args.widen_ifd:
-        ifd_min, ifd_max = 0.02, 0.98
+        ifd_min, ifd_max = 0.01, 0.99
     else:
         ifd_min, ifd_max = float(args.ifd_min), float(args.ifd_max)
 

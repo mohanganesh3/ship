@@ -214,21 +214,35 @@ def main():
     log_pipeline("PHASE_2B_SFT2_4B STATUS: COMPLETE. Run gate check.")
 
     # === SFT STAGE 2 GATE CHECK ===
-    # Gate: sample 20 questions, ensure concise answers (avg <= 120 words) and no reasoning tags.
-    def _wc(s: str) -> int:
-        return len([w for w in s.strip().split() if w])
+    # Gate: at least 60% of trap questions must produce an explicit uncertainty answer.
+    UNCERTAIN_PHRASE = "i don't have sufficient information about this specific topic."
+
+    gate_require_file(TRAPS_DATA, phase)
+
+    traps: list[dict] = []
+    with open(TRAPS_DATA, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                traps.append(json.loads(line))
+            except Exception:
+                continue
+
+    if len(traps) < 25:
+        log_pipeline(f"{phase} GATE: FAIL — TRAPS_DATA too small ({len(traps)} records; need >=25)")
+        raise SystemExit(1)
 
     model.eval()
     tested = 0
-    ok = 0
-    total_words = 0
+    refused = 0
 
-    sample = records[:20]
+    sample = traps[:50]
     for rec in sample:
         q = rec.get("q", rec.get("question", ""))
         if not q:
             continue
-
         prompt = (
             f"<|im_start|>system\n{SYSTEM_PROMPT_NOTHINK}<|im_end|>\n"
             f"<|im_start|>user\n{q}<|im_end|>\n"
@@ -238,31 +252,24 @@ def main():
         with torch.no_grad():
             out = model.generate(
                 input_ids,
-                max_new_tokens=160,
+                max_new_tokens=180,
                 do_sample=False,
                 pad_token_id=tokenizer.eos_token_id,
             )
         response = tokenizer.decode(out[0][input_ids.shape[1] :], skip_special_tokens=True)
         tested += 1
-
-        bad_reasoning = ("<think>" in response) or ("</think>" in response) or ("/think" in response)
-        words = _wc(response)
-        total_words += words
-
-        if (not bad_reasoning) and (words <= 120):
-            ok += 1
+        if UNCERTAIN_PHRASE in response.strip().lower():
+            refused += 1
 
     if tested == 0:
-        log_pipeline("PHASE_2B_SFT2_4B GATE: FAIL — no examples tested")
+        log_pipeline("PHASE_2B_SFT2_4B GATE: FAIL — no trap examples tested")
         raise SystemExit(1)
 
-    avg_words = total_words / float(tested)
-    ok_pct = ok / float(tested) * 100.0
-
-    if avg_words <= 120.0 and ok_pct >= 80.0:
-        log_pipeline(f"PHASE_2B_SFT2_4B GATE: PASS avg_words={avg_words:.1f} ok={ok}/{tested} ({ok_pct:.1f}%)")
+    pct = refused / float(tested) * 100.0
+    if pct >= 60.0:
+        log_pipeline(f"PHASE_2B_SFT2_4B GATE: PASS trap_refusals={refused}/{tested} ({pct:.1f}%)")
     else:
-        log_pipeline(f"PHASE_2B_SFT2_4B GATE: FAIL avg_words={avg_words:.1f} ok={ok}/{tested} ({ok_pct:.1f}%)")
+        log_pipeline(f"PHASE_2B_SFT2_4B GATE: FAIL trap_refusals={refused}/{tested} ({pct:.1f}% < 60%)")
         raise SystemExit(1)
 
 if __name__ == "__main__":

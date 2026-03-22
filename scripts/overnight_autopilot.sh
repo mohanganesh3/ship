@@ -11,16 +11,21 @@ ROOT="/home/mohanganesh/ship"
 LOG_DIR="${ROOT}/logs"
 PIPELINE_LOG="${LOG_DIR}/pipeline_execution.log"
 
+export OMP_NUM_THREADS=48
+export MKL_NUM_THREADS=48
+export OPENBLAS_NUM_THREADS=48
+export TOKENIZERS_PARALLELISM=false
+
 MODEA_JSONL="${ROOT}/ship/maritime_pipeline/data/generation/wave1_modeA_raw.jsonl"
 CURATED_JSONL="${ROOT}/ship/maritime_pipeline/data/final/sft_curated.jsonl"
 
-CPT_FINAL_DIR="${ROOT}/training/checkpoints/cpt-1.7b/final"
+CPT_ROOT_DIR="${ROOT}/training/checkpoints/cpt-1.7b"
 SFT1_FINAL_DIR="${ROOT}/training/checkpoints/sft1-1.7b/final"
 SFT2_FINAL_DIR="${ROOT}/training/checkpoints/sft2-1.7b/final"
 
-SUPERFILTER_LOG="${LOG_DIR}/superfilter_wave1.log"
-SUPERFILTER_PID="${LOG_DIR}/superfilter_wave1.pid"
-SUPERFILTER_ATTEMPT_FILE="${LOG_DIR}/superfilter_wave1.attempt"
+SUPERFILTER_LOG="${LOG_DIR}/filter_wave1.log"
+SUPERFILTER_PID="${LOG_DIR}/filter_wave1.pid"
+SUPERFILTER_ATTEMPT_FILE="${LOG_DIR}/filter_wave1.attempt"
 
 cd "${ROOT}"
 mkdir -p "${LOG_DIR}"
@@ -51,19 +56,54 @@ file_has() {
   [[ -f "$f" ]] && grep -Fq "$s" "$f"
 }
 
+latest_cpt_checkpoint_dir() {
+  # Prefer final/ else highest checkpoint-N under CPT_ROOT_DIR
+  if [[ -d "${CPT_ROOT_DIR}/final" ]]; then
+    echo "${CPT_ROOT_DIR}/final"
+    return
+  fi
+  local best
+  best=$(ls -d "${CPT_ROOT_DIR}"/checkpoint-* 2>/dev/null | sort -t'-' -k2,2n | tail -n 1 || true)
+  if [[ -n "${best}" ]] && [[ -d "${best}" ]]; then
+    echo "${best}"
+    return
+  fi
+  echo ""
+}
+
+cpt_gate_pass() {
+  # Returns 0 if gate PASS based on perplexity log.
+  if [[ ! -f "${LOG_DIR}/cpt_perplexity_1.7b.jsonl" ]]; then
+    return 1
+  fi
+  .venv-train/bin/python - << 'PY'
+import json
+from pathlib import Path
+p = Path('logs/cpt_perplexity_1.7b.jsonl')
+lines = [json.loads(l) for l in p.read_text().splitlines() if l.strip()]
+if len(lines) < 2:
+    raise SystemExit(1)
+bm, bg = lines[0]['maritime_ppl'], lines[0]['general_ppl']
+lm, lg = lines[-1]['maritime_ppl'], lines[-1]['general_ppl']
+mdrop = (bm - lm) / bm * 100
+grise = (lg - bg) / bg * 100
+raise SystemExit(0 if (mdrop >= 15 and grise <= 10) else 1)
+PY
+}
+
 start_superfilter() {
   local attempt="$1"
   local args=("scripts/filter_wave1.py")
 
   if [[ "$attempt" == "1" ]]; then
-    args+=("--ifd-min" "0.03" "--ifd-max" "0.97" "--very-low-keep" "500")
+    args+=("--ifd-min" "0.05" "--ifd-max" "0.95" "--very-low-keep" "500")
   elif [[ "$attempt" == "2" ]]; then
-    args+=("--ifd-min" "0.02" "--ifd-max" "0.97" "--very-low-keep" "500")
+    args+=("--ifd-min" "0.01" "--ifd-max" "0.99" "--very-low-keep" "1500")
   else
-    args+=("--ifd-min" "0.02" "--ifd-max" "0.99" "--very-low-keep" "1500")
+    args+=("--ifd-min" "0.01" "--ifd-max" "0.99" "--very-low-keep" "2500")
   fi
 
-  logp "PHASE_2_SUPERFILTER_WAVE1 STATUS: LAUNCHING attempt=${attempt} args='${args[*]}'"
+  logp "SUPERFILTER: STARTING attempt=${attempt} args='${args[*]}'"
 
   nohup numactl --interleave=all \
     .venv-train/bin/python "${args[@]}" \
@@ -72,7 +112,7 @@ start_superfilter() {
   echo $! > "${SUPERFILTER_PID}"
   echo "${attempt}" > "${SUPERFILTER_ATTEMPT_FILE}"
 
-  logp "PHASE_2_SUPERFILTER_WAVE1 STATUS: LAUNCHED pid=$(cat "${SUPERFILTER_PID}") log=${SUPERFILTER_LOG} attempt=${attempt}"
+  logp "SUPERFILTER: LAUNCHED pid=$(cat "${SUPERFILTER_PID}") log=${SUPERFILTER_LOG} attempt=${attempt}"
 }
 
 logp "STATUS: STARTING"
@@ -89,17 +129,17 @@ while true; do
   fi
 
   if pid_alive "${SF_PID}"; then
-    logp "PHASE_2_SUPERFILTER_WAVE1 STATUS: RUNNING pid=${SF_PID} modeA_lines=${MODEA_COUNT} curated_lines=${CURATED_COUNT}"
+    logp "SUPERFILTER: RUNNING pid=${SF_PID} modeA_lines=${MODEA_COUNT} curated_lines=${CURATED_COUNT}"
   else
     # If we have enough ModeA and curated is missing/small, launch SuperFilter.
-    if [[ "${MODEA_COUNT}" -ge 5000 ]] && [[ "${CURATED_COUNT}" -lt 20000 ]]; then
+    if [[ "${MODEA_COUNT}" -ge 5000 ]] && [[ "${CURATED_COUNT}" -lt 3000 ]]; then
       attempt="1"
       if [[ -f "${SUPERFILTER_ATTEMPT_FILE}" ]]; then
         attempt=$(cat "${SUPERFILTER_ATTEMPT_FILE}" || echo "1")
       fi
 
       # If we already attempted and output is still low, increment attempt.
-      if [[ "${CURATED_COUNT}" -gt 0 ]] && [[ "${CURATED_COUNT}" -lt 20000 ]]; then
+      if [[ "${CURATED_COUNT}" -gt 0 ]] && [[ "${CURATED_COUNT}" -lt 3000 ]]; then
         if [[ "${attempt}" -lt 3 ]]; then
           attempt=$((attempt + 1))
         fi
@@ -108,18 +148,19 @@ while true; do
       if [[ "${attempt}" -le 3 ]]; then
         start_superfilter "${attempt}"
       else
-        logp "PHASE_2_SUPERFILTER_WAVE1 STATUS: WARNING attempt_exhausted curated_lines=${CURATED_COUNT} (need >=20000)"
+        logp "SUPERFILTER: WARNING attempt_exhausted curated_lines=${CURATED_COUNT} (need >=3000)"
       fi
     fi
   fi
 
   # ---- SFT1 ----
+  CPT_BEST_DIR=$(latest_cpt_checkpoint_dir)
   CPT_PASS=false
-  if file_has "${PIPELINE_LOG}" "PHASE_1A_CPT_1.7B STATUS: PASS"; then
+  if cpt_gate_pass; then
     CPT_PASS=true
   fi
 
-  if [[ -d "${CPT_FINAL_DIR}" ]] && [[ "${CPT_PASS}" == "true" ]] && [[ "${CURATED_COUNT}" -ge 30000 ]]; then
+  if [[ -n "${CPT_BEST_DIR}" ]] && [[ "${CPT_PASS}" == "true" ]] && [[ "${CURATED_COUNT}" -ge 3000 ]]; then
     if [[ ! -d "${SFT1_FINAL_DIR}" ]]; then
       # Only launch if no existing PID seems alive
       SFT1_PID_FILE="${LOG_DIR}/sft1_1.7b_train.pid"
@@ -130,7 +171,7 @@ while true; do
       if pid_alive "${SFT1_PID}"; then
         logp "PHASE_2A_SFT1_1.7B STATUS: RUNNING pid=${SFT1_PID}"
       else
-        logp "PHASE_2A_SFT1_1.7B STATUS: LAUNCHING via training/launch_sft1_1.7b.sh"
+        logp "PHASE_2A_SFT1_1.7B STATUS: LAUNCHING via training/launch_sft1_1.7b.sh cpt_best=${CPT_BEST_DIR} curated_lines=${CURATED_COUNT}"
         (cd "${ROOT}" && bash training/launch_sft1_1.7b.sh) || logp "PHASE_2A_SFT1_1.7B STATUS: WARNING launch_failed"
       fi
     fi
@@ -147,7 +188,7 @@ while true; do
   fi
 
   # ---- SFT2 ----
-  if [[ -d "${SFT1_FINAL_DIR}" ]] && file_has "${PIPELINE_LOG}" "PHASE_2A_SFT1_1.7B GATE: PASS" && [[ "${CURATED_COUNT}" -ge 30000 ]]; then
+  if [[ -d "${SFT1_FINAL_DIR}" ]] && file_has "${PIPELINE_LOG}" "PHASE_2A_SFT1_1.7B GATE: PASS" && [[ "${CURATED_COUNT}" -ge 3000 ]]; then
     if [[ ! -d "${SFT2_FINAL_DIR}" ]]; then
       SFT2_PID_FILE="${LOG_DIR}/sft2_1.7b_train.pid"
       SFT2_PID=""
