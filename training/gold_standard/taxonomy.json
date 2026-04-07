@@ -1,0 +1,35 @@
+{
+  "engine_machinery": [
+    "2-stroke_propulsion", "4-stroke_auxiliary", "boilers_and_steam", "fuel_purification", "lube_oil_management", 
+    "cooling_systems", "air_compressors_and_bottles", "steering_gear_hydraulics", "oily_water_separators",
+    "sewage_treatment_plants", "refrigeration_and_hvac", "power_management_electrical", "emergency_generator",
+    "turbochargers", "scavenge_air_systems", "thrust_bearings", "tailshaft_seals", "evaporators_fwg"
+  ],
+  "ship_husbandry": [
+    "hull_coatings_and_antifouling", "iccp_and_cathodic_protection", "sea_chest_maintenance", "anchor_windlass_ops",
+    "mooring_winch_maintenance", "hull_structural_inspections", "tank_corrosion_control", "dry_docking_procedures",
+    "deck_crane_hydraulics", "ventilation_and_dampers", "watertight_doors", "hatch_cover_sealing",
+    "accommodation_fitting_out", "painting_and_surface_prep"
+  ],
+  "life_safety": [
+    "fire_classification", "fire_detectors_and_alarms", "co2_fixed_systems", "foam_and_water_mist",
+    "scba_and_eebd", "lifeboat_launching_gear", "life-raft_hru_and_inflation", "pyrotechnics_and_signaling",
+    "epirb_sart_gmdss", "mob_rescue_maneuvers", "enclosed_space_entry_ptw", "hot_work_safety",
+    "survival_at_sea_skills", "emergency_medical_procedures", "immersion_suits_and_personal_lsa"
+  ],
+  "regulatory_compliance": [
+    "marpol_annex_i_oil", "marpol_annex_ii_nls", "marpol_annex_iii_harmful_pkgs", "marpol_annex_iv_sewage",
+    "marpol_annex_v_garbage", "marpol_annex_vi_air", "ism_code_sms", "isps_security_code", "stcw_watchkeeping",
+    "load_line_convention", "mlc_labour_rights", "ballast_water_management_bwm", "polar_code", "ship_energy_efficiency_seemp"
+  ],
+  "operational_scenarios": [
+    "bunkering_safety", "pilotage_and_tug_operations", "heavy_weather_navigation", "canal_transit_suez_panama",
+    "piracy_and_armed_robbery_response", "cargo_ops_container", "cargo_ops_bulk", "cargo_ops_tanker",
+    "dp_dynamic_positioning", "ship-to-ship_transfer_sts", "salvage_basics", "mooring_and_unmooring_tactics"
+  ],
+  "crew_tool_and_repair": [
+    "torque_settings_and_standards", "precision_measurement_micrometers", "part_naming_and_selection", 
+    "weld_types_and_inspections", "hydraulic_piping_leak_repair", "valve_gland_repacking", "electrical_fault_finding",
+    "tool_maintenance_and_safety", "manual_interpretation_and_diagrams", "ppe_selection_by_task"
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "existing_samples": 17485,
+  "new_samples_needed": 49000,
+  "total_target": 66485,
+  "categories": {
+    "Detailed Regulatory Compliance": {
+      "MARPOL_details": 3000,
+      "SOLAS_specifics": 2500,
+      "STCW_competencies": 2000,
+      "ISM_Code": 1500,
+      "ISPS_Code": 1000,
+      "MLC_2006": 1000,
+      "Port_State_Control": 1000
+    },
+    "Emergency & Safety Procedures": {
+      "Fire_emergency": 2000,
+      "Enclosed_space": 2000,
+      "Man_overboard": 1500,
+      "Abandon_ship": 1500,
+      "Medical_emergencies": 1500,
+      "Collision": 1000,
+      "Grounding": 1000,
+      "Flooding": 1000
+    },
+    "Operational Procedures": {
+      "Cargo_operations_detailed": 2000,
+      "Ballast_operations": 1500,
+      "Bunkering": 1500,
+      "Mooring_anchoring": 1500,
+      "Watchkeeping": 1000,
+      "Drills": 1000
+    },
+    "Technical & Calculations": {
+      "Stability_calculations": 2000,
+      "Cargo_calculations": 1500,
+      "Navigation_calculations": 1500,
+      "Fuel_calculations": 1000,
+      "Trim_corrections": 1000
+    },
+    "Equipment & Systems": {
+      "GMDSS": 1500,
+      "Lifesaving_equipment": 1500,
+      "Fire_detection": 1000,
+      "Navigation_equipment": 1000,
+      "Engineering_systems": 1500
+    },
+    "Edge Cases & Scenarios": {
+      "Heavy_weather": 1000,
+      "Ice_navigation": 500,
+      "Piracy": 500,
+      "Canal_transit": 500,
+      "Unusual_incidents": 1000
+    }
+  }
+}

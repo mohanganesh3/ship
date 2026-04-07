@@ -1,0 +1,106 @@
+{
+  "accepted_snapshot_lines": 799,
+  "duplicates_skipped": 0,
+  "shards": {
+    "fleet_A": {
+      "accepted_kept": 74,
+      "duplicates_skipped": 0
+    },
+    "fleet_B": {
+      "accepted_kept": 34,
+      "duplicates_skipped": 0
+    },
+    "fleet_D": {
+      "accepted_kept": 82,
+      "duplicates_skipped": 0
+    },
+    "fleet_E": {
+      "accepted_kept": 83,
+      "duplicates_skipped": 0
+    },
+    "fleet_F": {
+      "accepted_kept": 59,
+      "duplicates_skipped": 0
+    },
+    "fleet_G": {
+      "accepted_kept": 62,
+      "duplicates_skipped": 0
+    },
+    "fleet_H": {
+      "accepted_kept": 83,
+      "duplicates_skipped": 0
+    },
+    "fleet_I": {
+      "accepted_kept": 84,
+      "duplicates_skipped": 0
+    },
+    "fleet_J": {
+      "accepted_kept": 84,
+      "duplicates_skipped": 0
+    },
+    "fleet_O": {
+      "accepted_kept": 0,
+      "duplicates_skipped": 0
+    },
+    "fleet_O2": {
+      "accepted_kept": 11,
+      "duplicates_skipped": 0
+    },
+    "fleet_P": {
+      "accepted_kept": 1,
+      "duplicates_skipped": 0
+    },
+    "fleet_Q": {
+      "accepted_kept": 0,
+      "duplicates_skipped": 0
+    },
+    "fleet_Q2": {
+      "accepted_kept": 11,
+      "duplicates_skipped": 0
+    },
+    "fleet_R": {
+      "accepted_kept": 0,
+      "duplicates_skipped": 0
+    },
+    "fleet_S": {
+      "accepted_kept": 0,
+      "duplicates_skipped": 0
+    },
+    "fleet_T": {
+      "accepted_kept": 0,
+      "duplicates_skipped": 0
+    },
+    "fleet_T2": {
+      "accepted_kept": 16,
+      "duplicates_skipped": 0
+    },
+    "fleet_T3": {
+      "accepted_kept": 8,
+      "duplicates_skipped": 0
+    },
+    "fleet_U": {
+      "accepted_kept": 28,
+      "duplicates_skipped": 0
+    },
+    "fleet_V": {
+      "accepted_kept": 44,
+      "duplicates_skipped": 0
+    },
+    "fleet_W": {
+      "accepted_kept": 9,
+      "duplicates_skipped": 0
+    },
+    "fleet_X": {
+      "accepted_kept": 1,
+      "duplicates_skipped": 0
+    },
+    "fleet_Y": {
+      "accepted_kept": 1,
+      "duplicates_skipped": 0
+    },
+    "fleet_Z": {
+      "accepted_kept": 24,
+      "duplicates_skipped": 0
+    }
+  }
+}

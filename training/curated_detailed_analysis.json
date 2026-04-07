@@ -1,0 +1,53 @@
+{
+  "total_samples": 17485,
+  "topic_coverage": {
+    "radar_navigation": 1,
+    "ecdis": 1,
+    "gps_navigation": 1,
+    "chart_work": 1,
+    "collision_avoidance": 1,
+    "fire_safety": 1,
+    "enclosed_space": 1,
+    "lifeboat": 1,
+    "man_overboard": 1,
+    "medical": 1,
+    "main_engine": 1,
+    "auxiliary_engine": 1,
+    "boiler": 1,
+    "pumps": 1,
+    "electrical": 1,
+    "steering_gear": 1,
+    "cargo_operations": 1,
+    "container": 1,
+    "bulk_cargo": 1,
+    "tanker_ops": 1,
+    "dangerous_goods": 1,
+    "marpol": 1,
+    "solas": 1,
+    "stcw": 1,
+    "ism_code": 1,
+    "isps": 1,
+    "stability_calc": 1,
+    "trim_list": 1,
+    "ballast": 1,
+    "freeboard": 1
+  },
+  "angles": {
+    "qa": 2809,
+    "checklist": 2603,
+    "audit": 1261,
+    "definitions": 1671,
+    "troubleshooting": 1786,
+    "edge_cases": 1784,
+    "procedure": 874,
+    "multi_hop": 3103,
+    "direct_qa": 1594
+  },
+  "difficulties": {},
+  "doc_types": {
+    "guidance": 2396,
+    "circular": 521,
+    "regulation": 42,
+    "accident_investigation": 14526
+  }
+}

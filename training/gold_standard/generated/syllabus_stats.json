@@ -1,0 +1,16 @@
+{
+  "started_at": "2026-04-09T16:29:39Z",
+  "preset": "shipboard_30k",
+  "focus": [
+    "engineering",
+    "safety",
+    "regulation"
+  ],
+  "accepted": 0,
+  "rejected": 0,
+  "failed": 0,
+  "accepted_by_domain": {},
+  "accepted_by_bucket": {},
+  "accepted_by_provider": {},
+  "rejections_by_issue": []
+}

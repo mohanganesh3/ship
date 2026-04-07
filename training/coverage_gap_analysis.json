@@ -1,0 +1,48 @@
+{
+  "total_samples": 17485,
+  "categorized": {
+    "stability": 2506,
+    "regulations": 2093,
+    "engineering": 1014,
+    "safety": 1981,
+    "specialized": 795,
+    "professional": 337,
+    "navigation": 2152,
+    "cargo": 609,
+    "communications": 277
+  },
+  "gaps": {
+    "safety": 13019,
+    "regulations": 12907,
+    "stability": 6494,
+    "engineering": 4986,
+    "cargo": 3391,
+    "navigation": 1848,
+    "communications": 923,
+    "specialized": 805,
+    "professional": 63
+  },
+  "targets": {
+    "safety": 15000,
+    "regulations": 15000,
+    "stability": 9000,
+    "engineering": 6000,
+    "cargo": 4000,
+    "navigation": 4000,
+    "communications": 1200,
+    "specialized": 1600,
+    "professional": 400
+  },
+  "uncategorized": 5721,
+  "priority_generation": [
+    "safety",
+    "regulations",
+    "stability",
+    "engineering",
+    "cargo",
+    "navigation",
+    "communications",
+    "specialized",
+    "professional"
+  ]
+}

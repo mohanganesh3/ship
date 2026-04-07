@@ -1,0 +1,211 @@
+{
+  "generated_at": "2026-04-09T16:29:39Z",
+  "preset": "shipboard_30k",
+  "focus": [
+    "engineering",
+    "safety",
+    "regulation"
+  ],
+  "requested_domains": null,
+  "task_count": 5,
+  "domains": [
+    {
+      "domain": "O",
+      "bucket": "safety",
+      "current": 145,
+      "target": 2660,
+      "deficit": 2515,
+      "subtopics": 36,
+      "domain_name": "FIRE SAFETY & FIREFIGHTING"
+    },
+    {
+      "domain": "T",
+      "bucket": "regulation",
+      "current": 250,
+      "target": 3162,
+      "deficit": 2912,
+      "subtopics": 39,
+      "domain_name": "ENVIRONMENTAL COMPLIANCE (MARPOL & BEYOND)"
+    },
+    {
+      "domain": "Q",
+      "bucket": "safety",
+      "current": 255,
+      "target": 3251,
+      "deficit": 2996,
+      "subtopics": 44,
+      "domain_name": "NAVIGATION SYSTEMS & INSTRUMENTS"
+    },
+    {
+      "domain": "R",
+      "bucket": "safety",
+      "current": 145,
+      "target": 1330,
+      "deficit": 1185,
+      "subtopics": 18,
+      "domain_name": "COLLISION AVOIDANCE \u2014 COLREGs 1972"
+    },
+    {
+      "domain": "S",
+      "bucket": "safety",
+      "current": 252,
+      "target": 1921,
+      "deficit": 1669,
+      "subtopics": 26,
+      "domain_name": "STABILITY, NAVAL ARCHITECTURE & STRUCTURAL INTEGRITY"
+    },
+    {
+      "domain": "P",
+      "bucket": "safety",
+      "current": 137,
+      "target": 1626,
+      "deficit": 1489,
+      "subtopics": 22,
+      "domain_name": "LIFE-SAVING APPLIANCES (LSA)"
+    },
+    {
+      "domain": "X",
+      "bucket": "safety",
+      "current": 114,
+      "target": 1478,
+      "deficit": 1364,
+      "subtopics": 20,
+      "domain_name": "MEDICAL CARE ONBOARD"
+    },
+    {
+      "domain": "Y",
+      "bucket": "safety",
+      "current": 90,
+      "target": 887,
+      "deficit": 797,
+      "subtopics": 12,
+      "domain_name": "COMMUNICATIONS"
+    },
+    {
+      "domain": "Z",
+      "bucket": "safety",
+      "current": 206,
+      "target": 1847,
+      "deficit": 1641,
+      "subtopics": 25,
+      "domain_name": "SPECIFIC OPERATIONAL TOPICS"
+    },
+    {
+      "domain": "U",
+      "bucket": "regulation",
+      "current": 101,
+      "target": 811,
+      "deficit": 710,
+      "subtopics": 10,
+      "domain_name": "SECURITY \u2014 ISPS CODE"
+    },
+    {
+      "domain": "V",
+      "bucket": "regulation",
+      "current": 350,
+      "target": 1216,
+      "deficit": 866,
+      "subtopics": 15,
+      "domain_name": "ISM CODE & SMS (SAFETY MANAGEMENT SYSTEM)"
+    },
+    {
+      "domain": "W",
+      "bucket": "regulation",
+      "current": 105,
+      "target": 811,
+      "deficit": 706,
+      "subtopics": 10,
+      "domain_name": "MARITIME LABOUR CONVENTION (MLC 2006)"
+    },
+    {
+      "domain": "A",
+      "bucket": "engineering",
+      "current": 729,
+      "target": 1873,
+      "deficit": 1144,
+      "subtopics": 48,
+      "domain_name": "PROPULSION SYSTEMS \u2014 TWO-STROKE SLOW-SPEED MAIN ENGINES"
+    },
+    {
+      "domain": "D",
+      "bucket": "engineering",
+      "current": 703,
+      "target": 1249,
+      "deficit": 546,
+      "subtopics": 32,
+      "domain_name": "FUEL SYSTEMS"
+    },
+    {
+      "domain": "H",
+      "bucket": "engineering",
+      "current": 369,
+      "target": 781,
+      "deficit": 412,
+      "subtopics": 20,
+      "domain_name": "EXHAUST GAS SYSTEMS & EMISSION CONTROL"
+    },
+    {
+      "domain": "J",
+      "bucket": "engineering",
+      "current": 351,
+      "target": 937,
+      "deficit": 586,
+      "subtopics": 24,
+      "domain_name": "PROPELLER, SHAFT LINE & STEERING"
+    },
+    {
+      "domain": "B",
+      "bucket": "engineering",
+      "current": 618,
+      "target": 664,
+      "deficit": 46,
+      "subtopics": 17,
+      "domain_name": "PROPULSION SYSTEMS \u2014 FOUR-STROKE MEDIUM-SPEED ENGINES"
+    },
+    {
+      "domain": "C",
+      "bucket": "engineering",
+      "current": 499,
+      "target": 499,
+      "deficit": 0,
+      "subtopics": 10,
+      "domain_name": "TURBOCHARGERS"
+    },
+    {
+      "domain": "E",
+      "bucket": "engineering",
+      "current": 441,
+      "target": 585,
+      "deficit": 144,
+      "subtopics": 15,
+      "domain_name": "LUBRICATION SYSTEMS"
+    },
+    {
+      "domain": "F",
+      "bucket": "engineering",
+      "current": 460,
+      "target": 546,
+      "deficit": 86,
+      "subtopics": 14,
+      "domain_name": "COOLING SYSTEMS"
+    },
+    {
+      "domain": "G",
+      "bucket": "engineering",
+      "current": 299,
+      "target": 390,
+      "deficit": 91,
+      "subtopics": 10,
+      "domain_name": "AIR SYSTEMS"
+    },
+    {
+      "domain": "I",
+      "bucket": "engineering",
+      "current": 248,
+      "target": 585,
+      "deficit": 337,
+      "subtopics": 15,
+      "domain_name": "BOILERS & STEAM SYSTEMS"
+    }
+  ]
+}
