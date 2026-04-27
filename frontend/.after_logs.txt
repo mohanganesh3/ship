@@ -1,0 +1,12 @@
+04-25 04:58:32.310 16378 16378 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+04-25 04:58:32.314 16378 16378 I AndroidRuntime: Using default boot image
+04-25 04:58:32.315 16378 16378 I AndroidRuntime: Leaving lock profiling enabled
+04-25 04:58:32.484 16378 16378 D AndroidRuntime: Calling main entry com.android.commands.monkey.Monkey
+04-25 04:58:32.545 16378 16378 I AndroidRuntime: VM exiting with result code 0.
+04-25 04:58:33.659 16401 16462 I ReactNativeJS: [ModelProvisioner] Done marker + valid file (1.03 GB) — provisioned ✓
+04-25 04:58:33.682 16401 16462 I ReactNativeJS: [23:28:33.682] [INFO] [PERF-MONITOR] Evaluating edge hardware safety...
+04-25 04:58:33.682 16401 16462 I ReactNativeJS: [23:28:33.682] [INFO] [PERF-MONITOR] Android OS detected. CPU-only mmap mode active.
+04-25 04:58:33.682 16401 16462 I ReactNativeJS: [23:28:33.682] [INFO] [PERF-MONITOR] Hardware verified: 8 cores, 6.0 GB, mode=CPU (mmap)
+04-25 04:58:33.688 16401 16462 I ReactNativeJS: [ModelProvisioner] Done marker + valid file (1.03 GB) — provisioned ✓
+04-25 04:58:33.688 16401 16462 I ReactNativeJS: [23:28:33.688] [INFO] [LLM-BRIDGE] Loading Shipboard Maritime AI from: /data/user/0/com.maritimeai.app/files/model.gguf
+04-25 04:58:36.306 16401 16462 I ReactNativeJS: [23:28:36.306] [INFO] [LLM-BRIDGE] Shipboard Maritime AI ready (ctx=4096)
