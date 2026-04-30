@@ -10,11 +10,16 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/maritime-ai-v1.0.0.apk">
+    <img src="https://img.shields.io/badge/📲_Download_APK-v1.0.0_(136MB)-brightgreen?style=for-the-badge" alt="Download APK"/>
+  </a>
   <a href="https://huggingface.co/mohanganesh3/maritime_model_v1"><img src="https://img.shields.io/badge/🤗_HuggingFace-Model_Deployed-yellow?style=for-the-badge" alt="HuggingFace"/></a>
   <a href="#architecture"><img src="https://img.shields.io/badge/Architecture-Edge_First-blue?style=for-the-badge" alt="Architecture"/></a>
   <a href="#training-pipeline"><img src="https://img.shields.io/badge/Training-6_Phase_Pipeline-green?style=for-the-badge" alt="Training"/></a>
   <a href="#frontend"><img src="https://img.shields.io/badge/Frontend-React_Native-61dafb?style=for-the-badge" alt="Frontend"/></a>
 </p>
+
+> **📲 Try it now:** [Download APK (136MB)](https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/maritime-ai-v1.0.0.apk) — installs on Android 10+, downloads the 1GB model on first launch via WiFi, then runs **100% offline** forever.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-198_Files-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
