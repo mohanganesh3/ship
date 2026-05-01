@@ -2,10 +2,10 @@
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a192f,50:0d47a1,100:1565c0&height=220&section=header&text=Maritime%20AI&fontSize=72&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Shipboard%20Intelligence%20Engine&descSize=22&descColor=90caf9&descAlignY=55" width="100%"/>
 </p>
 
-<p align="center">
-  <sub>A 1.7 billion parameter language model, purpose-built for life-safety maritime operations.</sub><br/>
-  <sub>Runs entirely offline on mobile. No cloud. No RAG. No compromise.</sub>
-</p>
+<h3 align="center">
+  A 1.7B parameter language model trained for life-safety maritime operations.<br/>
+  Runs 100% offline on Android. No cloud. No RAG. No compromise.
+</h3>
 
 <p align="center">
   <a href="https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/Maritime.apk"><strong>Download APK</strong></a> &nbsp;&middot;&nbsp;
@@ -15,36 +15,9 @@
   <a href="#mobile-application--react-native-edge-ai"><strong>Mobile App</strong></a>
 </p>
 
-<br/>
-
-<table align="center">
-<tr>
-<td align="center" width="140">
-<h3>1.7B</h3>
-<sub>Parameters</sub>
-</td>
-<td align="center" width="140">
-<h3>72M+</h3>
-<sub>Tokens Data</sub>
-</td>
-<td align="center" width="140">
-<h3>500K+</h3>
-<sub>QA Pairs</sub>
-</td>
-<td align="center" width="140">
-<h3>43</h3>
-<sub>Maritime Sources</sub>
-</td>
-<td align="center" width="140">
-<h3>6</h3>
-<sub>Training Phases</sub>
-</td>
-<td align="center" width="140">
-<h3>1.03 GB</h3>
-<sub>GGUF Q4_K_M</sub>
-</td>
-</tr>
-</table>
+<p align="center">
+  <code>Qwen3-1.7B</code> · <code>GGUF Q4_K_M</code> · <code>72M+ Tokens</code> · <code>500K+ QA Pairs</code> · <code>43 Sources</code> · <code>6-Phase Pipeline</code> · <code>Tesla K80 × 4</code>
+</p>
 
 <br/>
 
