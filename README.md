@@ -40,13 +40,17 @@
 
 ---
 
-## Why This Exists
+## The Problem
 
-> **A Chief Engineer alone in the engine room at 0300 hours needs answers. No internet. No shore support. No time to search manuals.**
+A Chief Engineer is alone in the engine room at 0300 hours. Something is wrong with the auxiliary boiler. There is no internet. Shore support is 12 hours away. The closest manual is four decks up and 800 pages long.
 
-This is **not** a chatbot. This is a **life-safety system** for maritime officers. A wrong answer about crankcase entry procedure causes **explosions**. A wrong answer about enclosed space entry causes **fatalities**. A wrong answer about MARPOL compliance causes **environmental disasters** and **port detentions**.
+In that moment, a wrong answer about crankcase entry procedure causes an explosion. A wrong answer about enclosed space oxygen levels causes a fatality. A wrong answer about MARPOL Annex I discharge limits causes an environmental disaster and a port detention.
 
-Every architectural decision in this project traces to **published research**. Every quality gate exists for a **reason**. Zero shortcuts. Zero compromises.
+This project exists because that scenario is real, and it happens every day on vessels around the world.
+
+**Maritime AI is not a chatbot.** It is a domain-specific language model that was scraped from 43 authoritative maritime sources, distilled through a 235B-parameter teacher, trained across 6 research-grounded phases, and compressed into a 1 GB file that runs on a phone with no connectivity.
+
+Every architectural decision traces to a published paper. Every quality gate has a mathematical threshold. The training data was collected under the same standard that classification societies use to certify vessels.
 
 ---
 
