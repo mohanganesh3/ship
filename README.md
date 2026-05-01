@@ -2,38 +2,37 @@
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a192f,50:0d47a1,100:1565c0&height=220&section=header&text=Maritime%20AI&fontSize=72&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Shipboard%20Intelligence%20Engine&descSize=22&descColor=90caf9&descAlignY=55" width="100%"/>
 </p>
 
-<p align="center">
-  <a href="https://github.com/mohanganesh3/Maritime-AI">
-    <img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=22&duration=3000&pause=1000&color=90CAF9&center=true&vCenter=true&multiline=true&repeat=true&width=750&height=80&lines=1.7B+parameter+LLM+trained+for+life-safety+maritime+operations;Runs+100%25+offline+on+mobile.+No+cloud.+No+RAG.+No+compromise.;115K+knowledge+chunks+%C2%B7+500K+QA+pairs+%C2%B7+43+authoritative+sources" alt="Typing SVG" />
-  </a>
-</p>
+<h3 align="center">
+  A 1.7 billion parameter language model, purpose-built for life-safety maritime operations.<br/>
+  Runs entirely offline on mobile devices. No cloud dependency. No RAG. No compromise.
+</h3>
 
 <p align="center">
-  <a href="https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/Maritime.apk"><strong>Download APK (v1.0.0)</strong></a> &nbsp;&middot;&nbsp;
-  <a href="https://huggingface.co/mohanganesh3/maritime_model_v1"><strong>HuggingFace Model</strong></a> &nbsp;&middot;&nbsp;
-  <a href="#architecture"><strong>Architecture</strong></a> &nbsp;&middot;&nbsp;
-  <a href="#training-pipeline"><strong>Training Pipeline</strong></a> &nbsp;&middot;&nbsp;
-  <a href="#frontend"><strong>Frontend</strong></a>
+  <a href="https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/Maritime.apk"><strong>Download APK</strong></a> &nbsp;&middot;&nbsp;
+  <a href="https://huggingface.co/mohanganesh3/maritime_model_v1"><strong>Model on HuggingFace</strong></a> &nbsp;&middot;&nbsp;
+  <a href="#system-architecture"><strong>Architecture</strong></a> &nbsp;&middot;&nbsp;
+  <a href="#the-6-phase-training-pipeline"><strong>Training Pipeline</strong></a> &nbsp;&middot;&nbsp;
+  <a href="#mobile-application--react-native-edge-ai"><strong>Mobile App</strong></a>
 </p>
 
 <br/>
 
 <table align="center">
 <tr>
-<td><b>Model</b></td>
-<td><b>Quantization</b></td>
-<td><b>Training Data</b></td>
-<td><b>Sources</b></td>
-<td><b>Pipeline</b></td>
-<td><b>Hardware</b></td>
+<td align="center"><b>Base Model</b></td>
+<td align="center"><b>Format</b></td>
+<td align="center"><b>Training Corpus</b></td>
+<td align="center"><b>Data Sources</b></td>
+<td align="center"><b>Pipeline</b></td>
+<td align="center"><b>Compute</b></td>
 </tr>
 <tr>
-<td>Qwen3 1.7B</td>
-<td>GGUF Q4_K_M · 1.03 GB</td>
-<td>115K chunks + 500K QA</td>
-<td>43 scrapers</td>
-<td>6-phase (CPT → ORPO)</td>
-<td>Tesla K80 × 4</td>
+<td align="center">Qwen3-1.7B</td>
+<td align="center">GGUF Q4_K_M · 1.03 GB</td>
+<td align="center">72M tokens + 500K QA pairs</td>
+<td align="center">43 maritime sources</td>
+<td align="center">6-phase CPT → ORPO</td>
+<td align="center">Tesla K80 × 4</td>
 </tr>
 </table>
 
