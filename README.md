@@ -1,78 +1,47 @@
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!--                    🌊 ANIMATED WAVE HEADER                              -->
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-
 <p align="center">
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a192f,50:0d47a1,100:1565c0&height=220&section=header&text=Maritime%20AI&fontSize=72&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Shipboard%20Intelligence%20Engine&descSize=22&descColor=90caf9&descAlignY=55" width="100%"/>
 </p>
 
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!--                    ⌨️  ANIMATED TYPING TAGLINE                           -->
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-
 <p align="center">
   <a href="https://github.com/mohanganesh3/Maritime-AI">
-    <img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=22&duration=3000&pause=1000&color=90CAF9&center=true&vCenter=true&multiline=true&repeat=true&width=750&height=80&lines=1.7B+LLM+fine-tuned+for+life-safety+maritime+operations;Runs+100%25+offline+on+mobile+%E2%80%94+No+cloud+%C2%B7+No+RAG+%C2%B7+No+compromise;Trained+on+115K+chunks+%C2%B7+500K+QA+pairs+%C2%B7+43+maritime+sources" alt="Typing SVG" />
+    <img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=22&duration=3000&pause=1000&color=90CAF9&center=true&vCenter=true&multiline=true&repeat=true&width=750&height=80&lines=1.7B+parameter+LLM+trained+for+life-safety+maritime+operations;Runs+100%25+offline+on+mobile.+No+cloud.+No+RAG.+No+compromise.;115K+knowledge+chunks+%C2%B7+500K+QA+pairs+%C2%B7+43+authoritative+sources" alt="Typing SVG" />
   </a>
 </p>
 
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!--                    🔥 PRIMARY ACTION BUTTONS                             -->
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-
 <p align="center">
-  <a href="https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/Maritime.apk">
-    <img src="https://img.shields.io/badge/📲_DOWNLOAD_APK-v1.0.0_•_136MB-00C853?style=for-the-badge&logoColor=white" alt="Download APK"/>
-  </a>
-  &nbsp;
-  <a href="https://huggingface.co/mohanganesh3/maritime_model_v1">
-    <img src="https://img.shields.io/badge/🤗_HUGGINGFACE-Model_Live-FFD54F?style=for-the-badge" alt="HuggingFace"/>
-  </a>
-  &nbsp;
-  <a href="https://github.com/mohanganesh3/Maritime-AI/releases">
-    <img src="https://img.shields.io/github/v/release/mohanganesh3/Maritime-AI?style=for-the-badge&label=Release&color=7C4DFF&logo=github" alt="Release"/>
-  </a>
-</p>
-
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!--                    🛠️  TECH STACK ICONS                                  -->
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-
-<p align="center">
-  <a href="https://skillicons.dev">
-    <img src="https://skillicons.dev/icons?i=python,pytorch,react,typescript,androidstudio,sqlite,huggingface&theme=dark" alt="Tech Stack" />
-  </a>
-</p>
-
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-<!--                    📊  PROJECT METRICS                                    -->
-<!-- ═══════════════════════════════════════════════════════════════════════════ -->
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-198_files-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/TypeScript-40_files-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
-  <img src="https://img.shields.io/badge/Model-Qwen3_1.7B-FF6F00?style=flat-square&logo=meta&logoColor=white" alt="Model"/>
-  <img src="https://img.shields.io/badge/GGUF-Q4__K__M_•_1.03GB-E53935?style=flat-square" alt="GGUF"/>
-  <img src="https://img.shields.io/badge/Data-115K_chunks_+_500K_QA-43A047?style=flat-square" alt="Data"/>
-  <img src="https://img.shields.io/badge/Scrapers-43_sources-FB8C00?style=flat-square" alt="Scrapers"/>
-  <img src="https://img.shields.io/badge/GPU-Tesla_K80_×4-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="GPU"/>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/github/repo-size/mohanganesh3/Maritime-AI?style=flat-square&color=5C6BC0&label=Repo%20Size" alt="Repo Size"/>
-  <img src="https://img.shields.io/github/last-commit/mohanganesh3/Maritime-AI?style=flat-square&color=7CB342&label=Last%20Commit" alt="Last Commit"/>
-  <img src="https://img.shields.io/github/commit-activity/m/mohanganesh3/Maritime-AI?style=flat-square&color=FF7043&label=Commits%2FMonth" alt="Commit Activity"/>
-  <img src="https://img.shields.io/badge/License-Research-9E9E9E?style=flat-square" alt="License"/>
+  <a href="https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/Maritime.apk"><strong>Download APK (v1.0.0)</strong></a> &nbsp;&middot;&nbsp;
+  <a href="https://huggingface.co/mohanganesh3/maritime_model_v1"><strong>HuggingFace Model</strong></a> &nbsp;&middot;&nbsp;
+  <a href="#architecture"><strong>Architecture</strong></a> &nbsp;&middot;&nbsp;
+  <a href="#training-pipeline"><strong>Training Pipeline</strong></a> &nbsp;&middot;&nbsp;
+  <a href="#frontend"><strong>Frontend</strong></a>
 </p>
 
 <br/>
 
-> [!IMPORTANT]
-> **📲 Try it now →** [**Download the APK (136 MB)**](https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/Maritime.apk) — Install on Android 10+, connect WiFi once to download the 1 GB model, then it works **100% offline** forever. No account needed.
+<table align="center">
+<tr>
+<td><b>Model</b></td>
+<td><b>Quantization</b></td>
+<td><b>Training Data</b></td>
+<td><b>Sources</b></td>
+<td><b>Pipeline</b></td>
+<td><b>Hardware</b></td>
+</tr>
+<tr>
+<td>Qwen3 1.7B</td>
+<td>GGUF Q4_K_M · 1.03 GB</td>
+<td>115K chunks + 500K QA</td>
+<td>43 scrapers</td>
+<td>6-phase (CPT → ORPO)</td>
+<td>Tesla K80 × 4</td>
+</tr>
+</table>
+
+<br/>
 
 ---
 
-## ⚠️ Why This Exists
+## Why This Exists
 
 > **A Chief Engineer alone in the engine room at 0300 hours needs answers. No internet. No shore support. No time to search manuals.**
 
@@ -82,7 +51,7 @@ Every architectural decision in this project traces to **published research**. E
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -192,7 +161,7 @@ Every architectural decision in this project traces to **published research**. E
 
 ---
 
-## 📊 Project Scale at a Glance
+## Project Scale
 
 | Metric | Value |
 |--------|-------|
@@ -211,7 +180,7 @@ Every architectural decision in this project traces to **published research**. E
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 ship/
@@ -332,7 +301,7 @@ ship/
 
 ---
 
-## 🌊 Phase 0: Data Engineering — The Gold Standard
+## Phase 0 — Data Engineering
 
 > **Months of effort. 43 custom scrapers. 115,783 chunks. This is the foundation everything else is built on.**
 
@@ -468,7 +437,7 @@ We used a **Qwen3-235B-A22B** (142GB Q4_K_M) teacher model running across **4 co
 
 ---
 
-## 🧠 The 6-Phase Training Pipeline
+## The 6-Phase Training Pipeline
 
 > **Every phase has a mathematical gate. If it fails, training stops. No exceptions.**
 
@@ -665,7 +634,7 @@ This pipeline implements findings from three convergent research streams:
 
 ---
 
-## 🛠️ Critical Engineering Breakthroughs
+## Critical Engineering Breakthroughs
 
 ### Tesla K80 Compatibility Hacks
 
@@ -683,7 +652,7 @@ The Tesla K80 (Kepler architecture, compute capability 3.7) lacks `bf16` support
 
 ---
 
-## 📱 Mobile Application — React Native Edge AI
+## Mobile Application — React Native Edge AI
 
 > **The model runs entirely on-device. No server. No API calls. The phone IS the inference engine.**
 
@@ -835,7 +804,7 @@ Deploying a 1.03 GB model to mobile devices over unreliable maritime connectivit
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
 ### HuggingFace Hub
 
@@ -858,7 +827,7 @@ Three quantization variants are available in `deploy/`:
 
 ---
 
-## 🔬 Tech Stack
+## Tech Stack
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
@@ -880,7 +849,7 @@ Three quantization variants are available in `deploy/`:
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 | Document | Lines | Purpose |
 |----------|-------|---------|
@@ -890,7 +859,7 @@ Three quantization variants are available in `deploy/`:
 
 ---
 
-## 🏁 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -951,7 +920,7 @@ python scripts/quality_audit.py
 
 ---
 
-## 📖 Research References
+## Research References
 
 1. **openPangu Embedded** (Huawei, Sep 2025) — Curriculum SFT for billion-parameter models
 2. **Qwen3 Technical Report** (Alibaba, Apr 2025) — Off-policy + on-policy distillation recipe
@@ -959,17 +928,11 @@ python scripts/quality_audit.py
 4. **SuperFiltering** (ACL 2024) — IFD-based data quality scoring
 5. **DAPT+TAPT** (Nature Computational Materials, 2025) — Domain + task adaptive pre-training
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Status-Production_Ready-00C853?style=for-the-badge" alt="Status"/>
-  &nbsp;
-  <img src="https://img.shields.io/badge/Safety_Trap_Rejection-97.5%25-2196F3?style=for-the-badge" alt="Safety"/>
-  &nbsp;
-  <img src="https://img.shields.io/badge/Offline_Capable-100%25-FF6F00?style=for-the-badge" alt="Offline"/>
-</p>
 
 <p align="center">
+  <br/>
   <strong>Built with months of research, hundreds of papers, and zero compromises.</strong><br/>
-  <em>Because at sea, there is no second chance.</em>
+  <em>Because at sea, there is no second chance.</em><br/><br/>
 </p>
 
 <p align="center">
