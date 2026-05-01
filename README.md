@@ -1,36 +1,74 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/🚢_Maritime_AI-Life_Safety_System-0a192f?style=for-the-badge&labelColor=1a1a2e&color=16213e" alt="Maritime AI"/>
-</p>
-
-<h1 align="center">Maritime AI — Shipboard Intelligence Engine</h1>
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!--                    🌊 ANIMATED WAVE HEADER                              -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
 
 <p align="center">
-  <strong>A 1.7B parameter language model, fine-tuned from scratch for life-safety maritime operations.<br/>
-  Runs 100% offline on mobile devices. No cloud. No RAG. No compromises.</strong>
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a192f,50:0d47a1,100:1565c0&height=220&section=header&text=Maritime%20AI&fontSize=72&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Shipboard%20Intelligence%20Engine&descSize=22&descColor=90caf9&descAlignY=55" width="100%"/>
 </p>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!--                    ⌨️  ANIMATED TYPING TAGLINE                           -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<p align="center">
+  <a href="https://github.com/mohanganesh3/Maritime-AI">
+    <img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=22&duration=3000&pause=1000&color=90CAF9&center=true&vCenter=true&multiline=true&repeat=true&width=750&height=80&lines=1.7B+LLM+fine-tuned+for+life-safety+maritime+operations;Runs+100%25+offline+on+mobile+%E2%80%94+No+cloud+%C2%B7+No+RAG+%C2%B7+No+compromise;Trained+on+115K+chunks+%C2%B7+500K+QA+pairs+%C2%B7+43+maritime+sources" alt="Typing SVG" />
+  </a>
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!--                    🔥 PRIMARY ACTION BUTTONS                             -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
 
 <p align="center">
   <a href="https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/Maritime.apk">
-    <img src="https://img.shields.io/badge/📲_Download_APK-v1.0.0_(136MB)-brightgreen?style=for-the-badge" alt="Download APK"/>
+    <img src="https://img.shields.io/badge/📲_DOWNLOAD_APK-v1.0.0_•_136MB-00C853?style=for-the-badge&logoColor=white" alt="Download APK"/>
   </a>
-  <a href="https://huggingface.co/mohanganesh3/maritime_model_v1"><img src="https://img.shields.io/badge/🤗_HuggingFace-Model_Deployed-yellow?style=for-the-badge" alt="HuggingFace"/></a>
-  <a href="#architecture"><img src="https://img.shields.io/badge/Architecture-Edge_First-blue?style=for-the-badge" alt="Architecture"/></a>
-  <a href="#training-pipeline"><img src="https://img.shields.io/badge/Training-6_Phase_Pipeline-green?style=for-the-badge" alt="Training"/></a>
-  <a href="#frontend"><img src="https://img.shields.io/badge/Frontend-React_Native-61dafb?style=for-the-badge" alt="Frontend"/></a>
+  &nbsp;
+  <a href="https://huggingface.co/mohanganesh3/maritime_model_v1">
+    <img src="https://img.shields.io/badge/🤗_HUGGINGFACE-Model_Live-FFD54F?style=for-the-badge" alt="HuggingFace"/>
+  </a>
+  &nbsp;
+  <a href="https://github.com/mohanganesh3/Maritime-AI/releases">
+    <img src="https://img.shields.io/github/v/release/mohanganesh3/Maritime-AI?style=for-the-badge&label=Release&color=7C4DFF&logo=github" alt="Release"/>
+  </a>
 </p>
 
-> **📲 Try it now:** [Download APK (136MB)](https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/Maritime.apk) — installs on Android 10+, downloads the 1GB model on first launch via WiFi, then runs **100% offline** forever.
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!--                    🛠️  TECH STACK ICONS                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-198_Files-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/TypeScript-40_Files-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
-  <img src="https://img.shields.io/badge/Model-Qwen3_1.7B-FF6F00?style=flat-square" alt="Model"/>
-  <img src="https://img.shields.io/badge/GGUF-Q4__K__M_1.03GB-red?style=flat-square" alt="GGUF"/>
-  <img src="https://img.shields.io/badge/Data-115K_Chunks_+_500K_QA-brightgreen?style=flat-square" alt="Data"/>
-  <img src="https://img.shields.io/badge/Scrapers-43_Sources-orange?style=flat-square" alt="Scrapers"/>
-  <img src="https://img.shields.io/badge/Training-Tesla_K80_×4-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="GPU"/>
-  <img src="https://img.shields.io/badge/License-Research-lightgrey?style=flat-square" alt="License"/>
+  <a href="https://skillicons.dev">
+    <img src="https://skillicons.dev/icons?i=python,pytorch,react,typescript,androidstudio,sqlite,huggingface&theme=dark" alt="Tech Stack" />
+  </a>
 </p>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!--                    📊  PROJECT METRICS                                    -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-198_files-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/TypeScript-40_files-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
+  <img src="https://img.shields.io/badge/Model-Qwen3_1.7B-FF6F00?style=flat-square&logo=meta&logoColor=white" alt="Model"/>
+  <img src="https://img.shields.io/badge/GGUF-Q4__K__M_•_1.03GB-E53935?style=flat-square" alt="GGUF"/>
+  <img src="https://img.shields.io/badge/Data-115K_chunks_+_500K_QA-43A047?style=flat-square" alt="Data"/>
+  <img src="https://img.shields.io/badge/Scrapers-43_sources-FB8C00?style=flat-square" alt="Scrapers"/>
+  <img src="https://img.shields.io/badge/GPU-Tesla_K80_×4-76B900?style=flat-square&logo=nvidia&logoColor=white" alt="GPU"/>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/github/repo-size/mohanganesh3/Maritime-AI?style=flat-square&color=5C6BC0&label=Repo%20Size" alt="Repo Size"/>
+  <img src="https://img.shields.io/github/last-commit/mohanganesh3/Maritime-AI?style=flat-square&color=7CB342&label=Last%20Commit" alt="Last Commit"/>
+  <img src="https://img.shields.io/github/commit-activity/m/mohanganesh3/Maritime-AI?style=flat-square&color=FF7043&label=Commits%2FMonth" alt="Commit Activity"/>
+  <img src="https://img.shields.io/badge/License-Research-9E9E9E?style=flat-square" alt="License"/>
+</p>
+
+<br/>
+
+> [!IMPORTANT]
+> **📲 Try it now →** [**Download the APK (136 MB)**](https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/Maritime.apk) — Install on Android 10+, connect WiFi once to download the 1 GB model, then it works **100% offline** forever. No account needed.
 
 ---
 
@@ -921,7 +959,13 @@ python scripts/quality_audit.py
 4. **SuperFiltering** (ACL 2024) — IFD-based data quality scoring
 5. **DAPT+TAPT** (Nature Computational Materials, 2025) — Domain + task adaptive pre-training
 
----
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Production_Ready-00C853?style=for-the-badge" alt="Status"/>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Safety_Trap_Rejection-97.5%25-2196F3?style=for-the-badge" alt="Safety"/>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Offline_Capable-100%25-FF6F00?style=for-the-badge" alt="Offline"/>
+</p>
 
 <p align="center">
   <strong>Built with months of research, hundreds of papers, and zero compromises.</strong><br/>
@@ -929,7 +973,5 @@ python scripts/quality_audit.py
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-Production_Ready-brightgreen?style=for-the-badge" alt="Status"/>
-  <img src="https://img.shields.io/badge/Safety_Trap_Rejection-97.5%25-blue?style=for-the-badge" alt="Safety"/>
-  <img src="https://img.shields.io/badge/Offline-100%25-orange?style=for-the-badge" alt="Offline"/>
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1565c0,50:0d47a1,100:0a192f&height=120&section=footer" width="100%"/>
 </p>
