@@ -69,9 +69,9 @@ Merchant ships operate with no reliable internet. When something fails — a boi
 │   │         43 Custom Scrapers → PDF Extractors → Quality Filters       │     │
 │   │                              │                                       │     │
 │   │                    ┌─────────▼─────────┐                            │     │
-│   │                    │  115,783 Chunks    │                            │     │
-│   │                    │  (~72M Tokens)     │                            │     │
+│   │                    │  72M+ Tokens       │                            │     │
 │   │                    │  Gold Standard     │                            │     │
+│   │                    │  Training Data     │                            │     │
 │   │                    └─────────┬─────────┘                            │     │
 │   └──────────────────────────────┼───────────────────────────────────────┘     │
 │                                  │                                              │
@@ -161,7 +161,7 @@ Merchant ships operate with no reliable internet. When something fails — a boi
 | **Total Python Files** | 198 (training, data pipeline, scrapers, generation) |
 | **Total TypeScript/TSX Files** | 40 (React Native frontend) |
 | **Custom Web Scrapers** | 43 sources (IMO, SOLAS, MAIB, DNV, ClassNK, Lloyd's, etc.) |
-| **Raw Data Chunks** | 115,783 chunks (~72M tokens) |
+| **Training Data** | 72M+ tokens from 43 authoritative maritime sources |
 | **Generated Q&A Pairs** | 500,000+ multi-angle distilled samples |
 | **Training Phases** | 6 (CPT → SFT1 → SFT2 → Correction → ORPO → Quantize) |
 | **Teacher Model** | Qwen3-235B-A22B (142GB, Q4_K_M) — 4 concurrent instances |
@@ -296,7 +296,7 @@ ship/
 
 ## Phase 0 — Data Engineering
 
-> **Months of effort. 43 custom scrapers. 115,783 chunks. This is the foundation everything else is built on.**
+> **Months of effort. 43 custom scrapers. 72M+ tokens of curated maritime knowledge. This is the foundation everything else is built on.**
 
 ### The Data Collection Philosophy
 
@@ -354,7 +354,7 @@ We did not use a single off-the-shelf dataset. Every piece of training data was 
 │                                                                  │
 │  + Specialized scrapers for bunkering, COW, ESE, FWG, gauging   │
 │                                                                  │
-│  Total: 43 scrapers → 115,783 chunks → ~72 Million tokens       │
+│  Total: 43 scrapers → 72M+ tokens of curated maritime data      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -381,7 +381,7 @@ Raw Web Pages / PDFs
                                               └────────┬─────────┘
                                                        │
                                               ┌────────▼─────────┐
-                                              │  115,783 Chunks  │
+                                              │  72M+ Tokens     │
                                               │  chunks.jsonl    │
                                               │  Gold Standard   │
                                               └──────────────────┘
