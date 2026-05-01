@@ -29,7 +29,7 @@
 <tr>
 <td align="center">Qwen3-1.7B</td>
 <td align="center">GGUF Q4_K_M · 1.03 GB</td>
-<td align="center">72M tokens + 500K QA pairs</td>
+<td align="center">72M+ tokens + 500K QA pairs</td>
 <td align="center">43 maritime sources</td>
 <td align="center">6-phase CPT → ORPO</td>
 <td align="center">Tesla K80 × 4</td>
@@ -42,15 +42,13 @@
 
 ## The Problem
 
-A Chief Engineer is alone in the engine room at 0300 hours. Something is wrong with the auxiliary boiler. There is no internet. Shore support is 12 hours away. The closest manual is four decks up and 800 pages long.
+Ships operate in the middle of the ocean with no internet, no shore support, and no margin for error. When something goes wrong — a boiler fault, an enclosed space rescue, a regulatory inspection — the engineer on watch has minutes to find the right answer. The nearest manual is 800 pages long. The satellite link is down. Help is half a day away.
 
-In that moment, a wrong answer about crankcase entry procedure causes an explosion. A wrong answer about enclosed space oxygen levels causes a fatality. A wrong answer about MARPOL Annex I discharge limits causes an environmental disaster and a port detention.
+A wrong answer about crankcase entry causes an explosion. A wrong answer about enclosed space oxygen levels causes a death. A wrong answer about discharge limits triggers an environmental disaster.
 
-This project exists because that scenario is real, and it happens every day on vessels around the world.
+**Maritime AI exists to solve this.** It is a domain-specific language model trained on 72M+ tokens of authoritative maritime knowledge, distilled through a 235B-parameter teacher model, refined across a 6-phase research pipeline, and compressed into a 1 GB file that runs on a phone — fully offline, with zero cloud dependency.
 
-**Maritime AI is not a chatbot.** It is a domain-specific language model that was scraped from 43 authoritative maritime sources, distilled through a 235B-parameter teacher, trained across 6 research-grounded phases, and compressed into a 1 GB file that runs on a phone with no connectivity.
-
-Every architectural decision traces to a published paper. Every quality gate has a mathematical threshold. The training data was collected under the same standard that classification societies use to certify vessels.
+This is not a general-purpose chatbot. Every training decision traces to a published paper. Every quality gate has a quantitative threshold. The data was sourced under the same standards that classification societies use to certify vessels.
 
 ---
 
