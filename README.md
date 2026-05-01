@@ -2,10 +2,10 @@
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a192f,50:0d47a1,100:1565c0&height=220&section=header&text=Maritime%20AI&fontSize=72&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Shipboard%20Intelligence%20Engine&descSize=22&descColor=90caf9&descAlignY=55" width="100%"/>
 </p>
 
-<h3 align="center">
-  A 1.7 billion parameter language model, purpose-built for life-safety maritime operations.<br/>
-  Runs entirely offline on mobile devices. No cloud dependency. No RAG. No compromise.
-</h3>
+<p align="center">
+  <sub>A 1.7 billion parameter language model, purpose-built for life-safety maritime operations.</sub><br/>
+  <sub>Runs entirely offline on mobile. No cloud. No RAG. No compromise.</sub>
+</p>
 
 <p align="center">
   <a href="https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/Maritime.apk"><strong>Download APK</strong></a> &nbsp;&middot;&nbsp;
@@ -19,36 +19,79 @@
 
 <table align="center">
 <tr>
-<td align="center"><b>Base Model</b></td>
-<td align="center"><b>Format</b></td>
-<td align="center"><b>Training Corpus</b></td>
-<td align="center"><b>Data Sources</b></td>
-<td align="center"><b>Pipeline</b></td>
-<td align="center"><b>Compute</b></td>
-</tr>
-<tr>
-<td align="center">Qwen3-1.7B</td>
-<td align="center">GGUF Q4_K_M · 1.03 GB</td>
-<td align="center">72M+ tokens + 500K QA pairs</td>
-<td align="center">43 maritime sources</td>
-<td align="center">6-phase CPT → ORPO</td>
-<td align="center">Tesla K80 × 4</td>
+<td align="center" width="140">
+<h3>1.7B</h3>
+<sub>Parameters</sub>
+</td>
+<td align="center" width="140">
+<h3>72M+</h3>
+<sub>Tokens Data</sub>
+</td>
+<td align="center" width="140">
+<h3>500K+</h3>
+<sub>QA Pairs</sub>
+</td>
+<td align="center" width="140">
+<h3>43</h3>
+<sub>Maritime Sources</sub>
+</td>
+<td align="center" width="140">
+<h3>6</h3>
+<sub>Training Phases</sub>
+</td>
+<td align="center" width="140">
+<h3>1.03 GB</h3>
+<sub>GGUF Q4_K_M</sub>
+</td>
 </tr>
 </table>
 
 <br/>
 
+```mermaid
+graph LR
+    A[43 Scrapers] --> B[72M+ Tokens]
+    B --> C[235B Teacher<br/>Distillation]
+    C --> D[500K+ QA Pairs]
+    D --> E[CPT → SFT → ORPO<br/>6-Phase Pipeline]
+    E --> F[1.03 GB GGUF<br/>Mobile-Ready]
+    F --> G[100% Offline<br/>Android App]
+
+    style A fill:#0a192f,stroke:#1565c0,color:#90caf9
+    style B fill:#0a192f,stroke:#1565c0,color:#90caf9
+    style C fill:#0a192f,stroke:#1565c0,color:#90caf9
+    style D fill:#0a192f,stroke:#1565c0,color:#90caf9
+    style E fill:#0a192f,stroke:#1565c0,color:#90caf9
+    style F fill:#0a192f,stroke:#1565c0,color:#90caf9
+    style G fill:#0d47a1,stroke:#90caf9,color:#ffffff
+```
+
 ---
 
 ## The Problem
 
-Merchant ships operate in the middle of the ocean with no reliable internet. When something goes wrong — a boiler fault, a fuel leak, an enclosed space emergency — the crew has minutes to make decisions that protect lives, cargo, and the environment. The nearest technical manual is 800 pages long. Shore support may be hours away.
+Merchant ships operate in the middle of the ocean with no reliable internet. When something goes wrong — a boiler fault, a fuel leak, an enclosed space emergency — the crew has minutes to make decisions that protect lives, cargo, and the environment. The nearest manual is 800 pages. Shore support may be hours away.
 
-A wrong answer about crankcase entry procedure causes an explosion. A wrong answer about enclosed space oxygen levels kills people. A wrong answer about MARPOL discharge limits leads to environmental disasters and port detentions.
+> [!CAUTION]
+> A wrong answer about crankcase entry procedure causes an **explosion**. A wrong answer about enclosed space oxygen levels **kills people**. A wrong answer about MARPOL discharge limits leads to **environmental disasters** and **port detentions**.
 
-**Maritime AI is not a chatbot.** It is a domain-specific language model built from 43 authoritative maritime sources, distilled through a 235B-parameter teacher model, trained across 6 research-backed phases, and compressed into a 1 GB file that runs on a phone — completely offline, with no connectivity required.
+**Maritime AI is not a chatbot.** It is a domain-specific language model built from 43 authoritative maritime sources, distilled through a 235B-parameter teacher, trained across 6 research-backed phases, and compressed into a single 1 GB file that runs on a phone — completely offline.
 
-Every architectural decision traces to a published paper. Every quality gate has a mathematical threshold. The training data meets the same standard that classification societies use to certify vessels.
+<details>
+<summary><strong>What makes this different from a general-purpose LLM?</strong></summary>
+
+<br/>
+
+| Dimension | General LLM | Maritime AI |
+|---|---|---|
+| **Training data** | Internet-scale, unverified | 43 authoritative maritime sources, manually curated |
+| **Teacher model** | None | Qwen3-235B-A22B (142 GB) — 4 concurrent instances |
+| **Safety alignment** | Generic RLHF | ORPO with 4 domain-specific error vectors (regulatory, safety, units, completeness) |
+| **Trap rejection** | Ad-hoc | 97.5% rejection rate on adversarial out-of-domain prompts |
+| **Deployment** | Cloud API | On-device GGUF, zero network dependency |
+| **Reasoning** | Single-mode | Dual-mode: `/think` (deep reasoning) and `/no_think` (concise answers) |
+
+</details>
 
 ---
 
