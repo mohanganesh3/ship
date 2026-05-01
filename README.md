@@ -42,13 +42,13 @@
 
 ## The Problem
 
-Ships operate in the middle of the ocean with no internet, no shore support, and no margin for error. When something goes wrong — a boiler fault, an enclosed space rescue, a regulatory inspection — the engineer on watch has minutes to find the right answer. The nearest manual is 800 pages long. The satellite link is down. Help is half a day away.
+Merchant ships operate in the middle of the ocean with no reliable internet. When something goes wrong — a boiler fault, a fuel leak, an enclosed space emergency — the crew has minutes to make decisions that protect lives, cargo, and the environment. The nearest technical manual is 800 pages long. Shore support may be hours away.
 
-A wrong answer about crankcase entry causes an explosion. A wrong answer about enclosed space oxygen levels causes a death. A wrong answer about discharge limits triggers an environmental disaster.
+A wrong answer about crankcase entry procedure causes an explosion. A wrong answer about enclosed space oxygen levels kills people. A wrong answer about MARPOL discharge limits leads to environmental disasters and port detentions.
 
-**Maritime AI exists to solve this.** It is a domain-specific language model trained on 72M+ tokens of authoritative maritime knowledge, distilled through a 235B-parameter teacher model, refined across a 6-phase research pipeline, and compressed into a 1 GB file that runs on a phone — fully offline, with zero cloud dependency.
+**Maritime AI is not a chatbot.** It is a domain-specific language model built from 43 authoritative maritime sources, distilled through a 235B-parameter teacher model, trained across 6 research-backed phases, and compressed into a 1 GB file that runs on a phone — completely offline, with no connectivity required.
 
-This is not a general-purpose chatbot. Every training decision traces to a published paper. Every quality gate has a quantitative threshold. The data was sourced under the same standards that classification societies use to certify vessels.
+Every architectural decision traces to a published paper. Every quality gate has a mathematical threshold. The training data meets the same standard that classification societies use to certify vessels.
 
 ---
 
