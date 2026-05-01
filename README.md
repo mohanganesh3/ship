@@ -48,24 +48,6 @@
 
 <br/>
 
-```mermaid
-graph LR
-    A[43 Scrapers] --> B[72M+ Tokens]
-    B --> C[235B Teacher<br/>Distillation]
-    C --> D[500K+ QA Pairs]
-    D --> E[CPT → SFT → ORPO<br/>6-Phase Pipeline]
-    E --> F[1.03 GB GGUF<br/>Mobile-Ready]
-    F --> G[100% Offline<br/>Android App]
-
-    style A fill:#0a192f,stroke:#1565c0,color:#90caf9
-    style B fill:#0a192f,stroke:#1565c0,color:#90caf9
-    style C fill:#0a192f,stroke:#1565c0,color:#90caf9
-    style D fill:#0a192f,stroke:#1565c0,color:#90caf9
-    style E fill:#0a192f,stroke:#1565c0,color:#90caf9
-    style F fill:#0a192f,stroke:#1565c0,color:#90caf9
-    style G fill:#0d47a1,stroke:#90caf9,color:#ffffff
-```
-
 ---
 
 ## The Problem
