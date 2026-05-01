@@ -2,10 +2,10 @@
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0a192f,50:0d47a1,100:1565c0&height=220&section=header&text=Maritime%20AI&fontSize=72&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Shipboard%20Intelligence%20Engine&descSize=22&descColor=90caf9&descAlignY=55" width="100%"/>
 </p>
 
-<h3 align="center">
-  A 1.7B parameter language model trained for life-safety maritime operations.<br/>
-  Runs 100% offline on Android. No cloud. No RAG. No compromise.
-</h3>
+<p align="center">
+  <em>A 1.7B parameter language model trained for life-safety maritime operations.</em><br/>
+  <em>Runs 100% offline on Android. No cloud. No RAG. No compromise.</em>
+</p>
 
 <p align="center">
   <a href="https://github.com/mohanganesh3/Maritime-AI/releases/download/v1.0.0/Maritime.apk"><strong>Download APK</strong></a> &nbsp;&middot;&nbsp;
@@ -15,36 +15,30 @@
   <a href="#mobile-application--react-native-edge-ai"><strong>Mobile App</strong></a>
 </p>
 
-<p align="center">
-  <code>Qwen3-1.7B</code> · <code>GGUF Q4_K_M</code> · <code>72M+ Tokens</code> · <code>500K+ QA Pairs</code> · <code>43 Sources</code> · <code>6-Phase Pipeline</code> · <code>Tesla K80 × 4</code>
-</p>
-
-<br/>
-
 ---
 
-## The Problem
+**Qwen3-1.7B** fine-tuned across a 6-phase pipeline (CPT → SFT → ORPO) on **72M+ tokens** of curated maritime knowledge and **500K+ QA pairs**, distilled from a 235B-parameter teacher model. Quantized to **GGUF Q4_K_M (1.03 GB)** for on-device inference. Scraped from **43 authoritative sources** — IMO, SOLAS, MARPOL, classification societies, P&I clubs, and accident investigation boards. Trained on **Tesla K80 × 4**.
 
-Merchant ships operate in the middle of the ocean with no reliable internet. When something goes wrong — a boiler fault, a fuel leak, an enclosed space emergency — the crew has minutes to make decisions that protect lives, cargo, and the environment. The nearest manual is 800 pages. Shore support may be hours away.
+Merchant ships operate with no reliable internet. When something fails — a boiler fault, a fuel leak, an enclosed space emergency — the crew has minutes to act. The nearest manual is 800 pages. Shore support is hours away.
 
 > [!CAUTION]
-> A wrong answer about crankcase entry procedure causes an **explosion**. A wrong answer about enclosed space oxygen levels **kills people**. A wrong answer about MARPOL discharge limits leads to **environmental disasters** and **port detentions**.
+> Wrong answers at sea have real consequences. A crankcase entry error causes an **explosion**. An enclosed space misjudgment **kills people**. A MARPOL violation triggers **environmental disasters** and **port detentions**.
 
-**Maritime AI is not a chatbot.** It is a domain-specific language model built from 43 authoritative maritime sources, distilled through a 235B-parameter teacher, trained across 6 research-backed phases, and compressed into a single 1 GB file that runs on a phone — completely offline.
+**Maritime AI is not a chatbot.** It is a domain-specific language model that runs on a phone with no connectivity — built to the same standard that classification societies use to certify vessels. Every architectural decision traces to a published paper. Every quality gate has a mathematical threshold.
 
 <details>
-<summary><strong>What makes this different from a general-purpose LLM?</strong></summary>
+<summary><strong>How is this different from a general-purpose LLM?</strong></summary>
 
 <br/>
 
-| Dimension | General LLM | Maritime AI |
-|---|---|---|
+| | General LLM | Maritime AI |
+|:---|:---|:---|
 | **Training data** | Internet-scale, unverified | 43 authoritative maritime sources, manually curated |
-| **Teacher model** | None | Qwen3-235B-A22B (142 GB) — 4 concurrent instances |
-| **Safety alignment** | Generic RLHF | ORPO with 4 domain-specific error vectors (regulatory, safety, units, completeness) |
-| **Trap rejection** | Ad-hoc | 97.5% rejection rate on adversarial out-of-domain prompts |
+| **Distillation** | None | Qwen3-235B-A22B (142 GB) — 4 concurrent instances |
+| **Safety alignment** | Generic RLHF | ORPO with 4 domain-specific error vectors |
+| **Trap rejection** | Ad-hoc | 97.5% rejection on adversarial out-of-domain prompts |
 | **Deployment** | Cloud API | On-device GGUF, zero network dependency |
-| **Reasoning** | Single-mode | Dual-mode: `/think` (deep reasoning) and `/no_think` (concise answers) |
+| **Reasoning** | Single-mode | Dual-mode: `/think` (deep) and `/no_think` (concise) |
 
 </details>
 
