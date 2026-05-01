@@ -29,7 +29,7 @@
 <tr>
 <td align="center">Qwen3-1.7B</td>
 <td align="center">GGUF Q4_K_M · 1.03 GB</td>
-<td align="center">72M+ tokens + 500K QA pairs</td>
+<td align="center">72M+ Tokens Data</td>
 <td align="center">43 maritime sources</td>
 <td align="center">6-phase CPT → ORPO</td>
 <td align="center">Tesla K80 × 4</td>
